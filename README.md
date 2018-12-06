@@ -4,12 +4,12 @@
 
 ### Main
 - auctionHouse : `AuctionHouse`
-- clients :`List<Client>` // (email :String, password :String, socket :Socket)
+- clients :`List<Client>`
 - socketServer :`SocketServer`
 
 
 ### AuctionHouse
-- stock :`HashMap<String, Item>` // (type :String, Price :int, Amount :int)
+- stock :`HashMap<String, Item>`
 - auctions :`List<TopBid>`
 - reserved :`List<Droplet>`
 
@@ -25,7 +25,7 @@
 
 ### Droplet
 - type :`String`
-- client :`String` // email
+- clientEmail :`String`
 
 ### TopBid
 - type :`String`
