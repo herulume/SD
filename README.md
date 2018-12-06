@@ -1,5 +1,7 @@
 # SD
 
+## Base Structure
+
 ### Main
 - auctionHouse : `AuctionHouse`
 - clients :`List<Client>` // (email :String, password :String, socket :Socket)
@@ -33,3 +35,7 @@
 - auctionHouse :`AuctionHouse`
 - Socket :`Socket`
 - clientEmail :`String`
+
+
+## Extra points
+Reutilizar workers (Client-Con)
