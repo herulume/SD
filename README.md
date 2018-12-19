@@ -4,38 +4,41 @@
 
 ### Main
 - auctionHouse : `AuctionHouse`
-- clients :`List<Client>`
+- clients :`Map<String, Client>`
 - socketServer :`SocketServer`
 
 
-### AuctionHouse
-- stock :`HashMap<String, Item>`
-- auctions :`List<TopBid>`
-- reserved :`List<Droplet>`
+### AuctionHouse (mutable)
+- stock :`List<Item>`
+- auctions :`Map<Integer, TopBid>`
+- reserved :`Map<String, Droplet>`
 
-### Client
+### Client (mutable but not in thread)
 - email :`String`
 - passowrd :`String`
 - socket :`Socket @Nullable`
 
 ### Item
-- type :`String`
+- id: `int`
+- type :`ServerType`
 - price :`int`
-- amount :`int`
 
 ### Droplet
-- type :`String`
+- item :`Item`
 - clientEmail :`String`
 
 ### TopBid
-- type :`String`
-- amount :`String`
+- item :`Item`
+- owner :`String`
+- amount :`int`
 
-### Client-Con (In Thread)
+### Client-Connection (Worker Thread)
 - auctionHouse :`AuctionHouse`
 - Socket :`Socket`
 - clientEmail :`String`
 
+### ServerType
+Enum with server types
 
 ## Extra points
-Reutilizar workers (Client-Con)
+Reutilize Workers (Client-Connection)
