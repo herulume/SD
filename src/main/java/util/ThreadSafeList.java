@@ -14,6 +14,12 @@ public class ThreadSafeList <T> implements List<T> {
         this.lock = new ReentrantReadWriteLock();
     }
 
+    public ThreadSafeList(Collection<T> list){
+        this.list = new ThreadSafeList<>();
+        this.lock = new ReentrantReadWriteLock();
+        this.list.addAll(list);
+    }
+
     @Override
     public int size(){
         try{
@@ -191,33 +197,42 @@ public class ThreadSafeList <T> implements List<T> {
     }
 
     @Override
-    public Iterator<T> iterator() throws UnsupportedOperationException {
+    public Object[] toArray(){
+        try{
+            this.lock.readLock().lock();
+            return this.list.toArray();
+        }finally{
+            this.lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public List<T> subList(int i, int i1){
+        try{
+            this.lock.readLock().lock();
+            return new ThreadSafeList<>(this.list.subList(i, i1));
+        }finally{
+            this.lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public Iterator<T> iterator() throws UnsupportedOperationException{
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Object[] toArray() throws UnsupportedOperationException {
+    public ListIterator<T> listIterator() throws UnsupportedOperationException{
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <T1> T1[] toArray(T1[] t1s) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public ListIterator<T> listIterator() throws UnsupportedOperationException {
+    public ListIterator<T> listIterator(int i) throws UnsupportedOperationException{
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ListIterator<T> listIterator(int i) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<T> subList(int i, int i1) throws UnsupportedOperationException {
+    public <T1> T1[] toArray(T1[] t1s) throws UnsupportedOperationException{
         throw new UnsupportedOperationException();
     }
 }
