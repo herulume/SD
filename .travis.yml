@@ -2,3 +2,5 @@ language: java
 jdk:
   - oraclejdk8
   - openjdk8
+
+script: javac ./cliente/* && javac ./server/*
