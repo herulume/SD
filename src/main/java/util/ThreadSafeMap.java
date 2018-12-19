@@ -128,4 +128,14 @@ public class ThreadSafeMap <K, V> implements Map<K,V> {
             this.lock.readLock().unlock();
         }
     }
+
+    @Override
+    public boolean equals(Object o){
+        try{
+            this.lock.readLock().lock();
+            return this.map.equals(o);
+        }finally{
+            this.lock.readLock().unlock();
+        }
+    }
 }
