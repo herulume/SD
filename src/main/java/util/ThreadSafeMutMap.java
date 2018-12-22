@@ -1,6 +1,7 @@
 package util;
 
 
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.*;
 
 public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V> {
@@ -15,6 +16,21 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
         if(v == null) return null;
         v.lock();
         return v;
+    }
+
+    public Collection<V> getLocked(Collection<K> keys) {
+        try{
+            this.lock.readLock().lock();
+            List<V> result = new ArrayList<>();
+            for(K key : keys){
+                V v = this.map.get(key);
+                v.lock();
+                result.add(v);
+            }
+            return result;
+        }finally{
+            this.lock.readLock().unlock();
+        }
     }
 
     public V putLocked(K k, V v){
@@ -90,6 +106,11 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
 
     @Override
     public V get(Object o) throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("Use getLocked instead");
+    }
+
+    @Override
+    public Collection<V> get(Collection<K> keys) throws UnsupportedOperationException{
         throw new UnsupportedOperationException("Use getLocked instead");
     }
 
