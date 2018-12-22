@@ -26,54 +26,59 @@ public class ThreadSafeMutMapTest {
         Thread.sleep(10);
         Assert.assertEquals(2, two.state);
         two.unlock();
-        Thread.sleep(10);
+        t.join();
         Assert.assertEquals(3, two.state);
     }
 
     @Test
-    public void remove(){
+    public void remove() throws InterruptedException{
+        ThreadSafeMutMap<String, Mutable> map = new ThreadSafeMutMap<>();
+        IntStream.range(0, 10).forEach(i -> map.putLocked(i + "", new Mutable(i)));
+        Mutable v1 = map.getLocked("1");
+        Thread t2 = new Thread(() -> map.remove("2"));
+        t2.start();
+        t2.join();
+        Assert.assertTrue(!map.containsKey("2"));
+        Thread t1 = new Thread(() -> map.remove("1"));
+        t1.start();
+        Thread.sleep(10);
+        Assert.assertTrue(map.containsKey("1")); // probably a deadlock
+        v1.unlock();
+        t1.join();
     }
 
     @Test
-    public void putAll(){
-    }
-
-    @Test
-    public void clear(){
+    public void clear() throws InterruptedException{
+        ThreadSafeMutMap<String, Mutable> map = new ThreadSafeMutMap<>();
+        IntStream.range(0, 10).forEach(i -> map.putLocked(i + "", new Mutable(i)));
+        Thread t = new Thread(map::clear);
+        Mutable v = map.getLocked("1");
+        t.start();
+        Thread.sleep(10);
+        Assert.assertNotEquals(map.size(), 0);
+        v.unlock();
+        Thread.sleep(10);
+        Assert.assertEquals(map.size(), 0);
     }
 
     @Test
     public void valuesLocked() throws InterruptedException{
-        int i = 0;
         ThreadSafeMutMap<String,Mutable> map = new ThreadSafeMutMap<>();
-        System.out.println(i++);
-        for(int i1 = 0; i1 < 10; i1++){
-            Mutable m = new Mutable(i1);
-            map.putLocked(m.getState() + "", m);
-            System.out.println(m);
-        }
-        System.out.println(i++);
+        IntStream.range(0, 10).forEach(i -> map.putLocked(i + "", new Mutable(i)));
         Thread t = new Thread(() -> {
             Mutable m = map.getLocked("2");
             m.incrementState();
             m.unlock();
         });
-        System.out.println(i++);
         Collection<Mutable> mutables = map.valuesLocked();
-        System.out.println(i++);
         t.start();
-        System.out.println(i++);
         Thread.sleep(100);
-        System.out.println(i++);
         Assert.assertEquals(
                 IntStream.range(0, 10).collect(HashSet::new, HashSet::add, HashSet::addAll),
                 mutables.stream().map(Mutable::getState).collect(Collectors.toSet())
         );
-        System.out.println(i++);
         mutables.forEach(Lockable::unlock);
-        System.out.println(i++);
         t.join();
-        System.out.println(i);
     }
 
     @Test
@@ -104,10 +109,6 @@ public class ThreadSafeMutMapTest {
         private Mutable(int state){
             this.state = state;
             this.lock = new ReentrantLock();
-        }
-
-        private void setState(int state){
-            this.state = state;
         }
 
         private int getState(){

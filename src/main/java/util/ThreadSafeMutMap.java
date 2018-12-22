@@ -10,21 +10,11 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
         super();
     }
 
-    @Override
-    public V get(Object o) throws UnsupportedOperationException{
-        throw new UnsupportedOperationException("Use getLocked instead");
-    }
-
     public V getLocked(K o){
         V v = this.map.get(o);
         if(v == null) return null;
         v.lock();
         return v;
-    }
-
-    @Override
-    public V put(K k, V v) throws UnsupportedOperationException{
-        throw new UnsupportedOperationException("Use putLocked instead");
     }
 
     public V putLocked(K k, V v){
@@ -73,22 +63,12 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
         this.lock.writeLock().unlock();
     }
 
-    @Override
-    public Collection<V> values() throws UnsupportedOperationException{
-        throw new UnsupportedOperationException("Use valuesLocked instead");
-    }
-
     public Collection<V> valuesLocked(){
         this.lock.writeLock().lock();
         this.map.values().forEach(Lockable::lock);
         Collection<V> r = new ArrayList<>(this.map.values());
         this.lock.writeLock().unlock();
         return r;
-    }
-
-    @Override
-    public Set<Entry<K,V>> entrySet() throws UnsupportedOperationException{
-        throw new UnsupportedOperationException("User entrySetLocked instead");
     }
 
     public Set<Entry<K,V>> entrySetLocked(){
@@ -102,5 +82,25 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
     @Override
     public String toString(){
         return this.map.toString();
+    }
+
+    @Override
+    public V get(Object o) throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("Use getLocked instead");
+    }
+
+    @Override
+    public V put(K k, V v) throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("Use putLocked instead");
+    }
+
+    @Override
+    public Collection<V> values() throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("Use valuesLocked instead");
+    }
+
+    @Override
+    public Set<Entry<K,V>> entrySet() throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("User entrySetLocked instead");
     }
 }
