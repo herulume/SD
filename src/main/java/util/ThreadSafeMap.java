@@ -6,8 +6,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadSafeMap <K, V> implements Map<K,V> {
 
-    private HashMap<K,V> map;
-    private ReadWriteLock lock;
+    protected HashMap<K,V> map;
+    protected ReadWriteLock lock;
 
     public ThreadSafeMap(){
         this.map = new HashMap<>();
@@ -54,6 +54,19 @@ public class ThreadSafeMap <K, V> implements Map<K,V> {
         try{
             this.lock.readLock().lock();
             return this.map.get(o);
+        }finally{
+            this.lock.readLock().unlock();
+        }
+    }
+
+    public Collection<V> get(Collection<K> keys) {
+        try{
+            this.lock.readLock().lock();
+            List<V> result = new ArrayList<>();
+            for(K key : keys){
+                result.add(this.map.get(key));
+            }
+            return result;
         }finally{
             this.lock.readLock().unlock();
         }
