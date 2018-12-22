@@ -42,9 +42,10 @@ public class ThreadSafeMutMapTest {
         Thread t1 = new Thread(() -> map.remove("1"));
         t1.start();
         Thread.sleep(10);
-        Assert.assertTrue(map.containsKey("1")); // probably a deadlock
+        Assert.assertTrue(t1.isAlive());
         v1.unlock();
         t1.join();
+        Assert.assertTrue(!map.containsKey("1"));
     }
 
     @Test
@@ -55,9 +56,9 @@ public class ThreadSafeMutMapTest {
         Mutable v = map.getLocked("1");
         t.start();
         Thread.sleep(10);
-        Assert.assertNotEquals(map.size(), 0);
+        Assert.assertTrue(t.isAlive());
         v.unlock();
-        Thread.sleep(10);
+        t.join();
         Assert.assertEquals(map.size(), 0);
     }
 

@@ -34,7 +34,7 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
     @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public V remove(Object o){
-        this.lock.writeLock().unlock();
+        this.lock.writeLock().lock();
         if(this.map.containsKey(o)){
             this.map.get(o).lock();
             V r = this.map.remove(o);
@@ -59,7 +59,11 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
     public void clear(){
         this.lock.writeLock().lock();
         this.map.values().forEach(Lockable::lock);
-        this.map.keySet().forEach(k -> this.map.remove(k).unlock());
+        for(Iterator<V> iterator = this.map.values().iterator(); iterator.hasNext(); ){
+            V v = iterator.next();
+            iterator.remove();
+            v.unlock();
+        }
         this.lock.writeLock().unlock();
     }
 
