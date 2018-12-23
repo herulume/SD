@@ -3,10 +3,7 @@ package util;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 public class ThreadSafeMapTest {
@@ -24,16 +21,16 @@ public class ThreadSafeMapTest {
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
-        List<Thread> threads = new ArrayList<>();
+        Stack<Thread> threads = new Stack<>();
         for(int i = 0; i < 10; i++){
-            threads.add(new Thread(new Adder(values.subList(from, to), list)));
-            threads.get(threads.size() - 1).start();
+            threads.push(new Thread(new Adder(values.subList(from, to), list)));
+            threads.peek().start();
             from = to;
             to = to + chunkSize;
         }
-        for(Thread thread : threads){
+        while(!threads.empty()){
             try{
-                thread.join();
+                threads.pop().join();
             }catch(InterruptedException ignored){
             }
         }
@@ -46,16 +43,16 @@ public class ThreadSafeMapTest {
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
-        List<Thread> threads = new ArrayList<>();
+        Stack<Thread> threads = new Stack<>();
         for(int i = 0; i < 10; i++){
-            threads.add(new Thread(new Adder(values.subList(from, to), map)));
-            threads.get(threads.size() - 1).start();
+            threads.push(new Thread(new Adder(values.subList(from, to), map)));
+            threads.peek().start();
             from = to;
             to = to + chunkSize;
         }
-        for(Thread thread : threads){
+        while(!threads.empty()){
             try{
-                thread.join();
+                threads.pop().join();
             }catch(InterruptedException ignored){
             }
         }
@@ -70,16 +67,16 @@ public class ThreadSafeMapTest {
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
-        List<Thread> threads = new ArrayList<>();
+        Stack<Thread> threads = new Stack<>();
         for(int i = 0; i < 10; i++){
-            threads.add(new Thread(new Adder(values.subList(from, to), map)));
-            threads.get(threads.size() - 1).start();
+            threads.push(new Thread(new Adder(values.subList(from, to), map)));
+            threads.peek().start();
             from = to;
             to = to + chunkSize;
         }
-        for(Thread thread : threads){
+        while(!threads.empty()){
             try{
-                thread.join();
+                threads.pop().join();
             }catch(InterruptedException ignored){
             }
         }
@@ -94,19 +91,19 @@ public class ThreadSafeMapTest {
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
-        List<Thread> threads = new ArrayList<>();
+        Stack<Thread> threads = new Stack<>();
         for(int i = 0; i < 10; i++){
-            threads.add(new Thread(new Adder(values.subList(from, to), map)));
-            threads.get(threads.size() - 1).start();
+            threads.push(new Thread(new Adder(values.subList(from, to), map)));
+            threads.peek().start();
             from = to;
             to = to + chunkSize;
         }
         for(int i = 0; i < 10000; i++){
             Assert.assertTrue(map.get(i + "") == null || map.get(i + "") == i);
         }
-        for(Thread thread : threads){
+        while(!threads.empty()){
             try{
-                thread.join();
+                threads.pop().join();
             }catch(InterruptedException ignored){
             }
         }
@@ -119,16 +116,16 @@ public class ThreadSafeMapTest {
         values.forEach(i -> map.put(i.toString(), i));
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
-        List<Thread> threads = new ArrayList<>();
+        Stack<Thread> threads = new Stack<>();
         for(int i = 0; i < 10; i++){
-            threads.add(new Thread(new Remover(values.subList(from, to), map)));
-            threads.get(threads.size() - 1).start();
+            threads.push(new Thread(new Remover(values.subList(from, to), map)));
+            threads.peek().start();
             from = to;
             to = to + chunkSize;
         }
-        for(Thread thread : threads){
+        while(!threads.empty()){
             try{
-                thread.join();
+                threads.pop().join();
             }catch(InterruptedException ignored){
             }
         }
