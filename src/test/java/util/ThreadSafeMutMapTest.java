@@ -15,7 +15,7 @@ public class ThreadSafeMutMapTest {
 
     @Test
     public void putLocked() throws InterruptedException{
-        ThreadSafeMutMap<String, Mutable> map = new ThreadSafeMutMap<>();
+        ThreadSafeMutMap<String,Mutable> map = new ThreadSafeMutMap<>();
         map.putLocked("2", new Mutable(2));
         Thread t = new Thread(() -> {
             Mutable two = map.putLocked("2", new Mutable(3));
@@ -32,25 +32,25 @@ public class ThreadSafeMutMapTest {
 
     @Test
     public void remove() throws InterruptedException{
-        ThreadSafeMutMap<String, Mutable> map = new ThreadSafeMutMap<>();
+        ThreadSafeMutMap<String,Mutable> map = new ThreadSafeMutMap<>();
         IntStream.range(0, 10).forEach(i -> map.putLocked(i + "", new Mutable(i)));
         Mutable v1 = map.getLocked("1");
         Thread t2 = new Thread(() -> map.remove("2"));
         t2.start();
         t2.join();
-        Assert.assertTrue(!map.containsKey("2"));
+        Assert.assertTrue(! map.containsKey("2"));
         Thread t1 = new Thread(() -> map.remove("1"));
         t1.start();
         Thread.sleep(10);
         Assert.assertTrue(t1.isAlive());
         v1.unlock();
         t1.join();
-        Assert.assertTrue(!map.containsKey("1"));
+        Assert.assertTrue(! map.containsKey("1"));
     }
 
     @Test
     public void clear() throws InterruptedException{
-        ThreadSafeMutMap<String, Mutable> map = new ThreadSafeMutMap<>();
+        ThreadSafeMutMap<String,Mutable> map = new ThreadSafeMutMap<>();
         IntStream.range(0, 10).forEach(i -> map.putLocked(i + "", new Mutable(i)));
         Thread t = new Thread(map::clear);
         Mutable v = map.getLocked("1");

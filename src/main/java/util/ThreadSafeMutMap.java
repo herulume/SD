@@ -1,10 +1,9 @@
 package util;
 
 
-import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.*;
 
-public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V> {
+public class ThreadSafeMutMap<K, V extends Lockable> extends ThreadSafeMap<K,V> {
 
 
     public ThreadSafeMutMap(){
@@ -18,7 +17,7 @@ public class ThreadSafeMutMap <K, V extends Lockable> extends ThreadSafeMap<K,V>
         return v;
     }
 
-    public Collection<V> getLocked(Collection<K> keys) {
+    public Collection<V> getLocked(Collection<K> keys){
         try{
             this.lock.readLock().lock();
             List<V> result = new ArrayList<>();

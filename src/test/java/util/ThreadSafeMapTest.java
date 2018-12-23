@@ -11,16 +11,16 @@ import java.util.stream.IntStream;
 
 public class ThreadSafeMapTest {
 
-    private Map<String, Integer> testCase;
+    private Map<String,Integer> testCase;
 
     public ThreadSafeMapTest(){
         this.testCase = new HashMap<>();
-        IntStream.range(0, 10000).forEach(i -> this.testCase.put(i + "",i));
+        IntStream.range(0, 10000).forEach(i -> this.testCase.put(i + "", i));
     }
 
     @Test
     public void size(){
-        ThreadSafeMap<String, Integer> list = new ThreadSafeMap<>();
+        ThreadSafeMap<String,Integer> list = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
@@ -46,7 +46,7 @@ public class ThreadSafeMapTest {
 
     @Test
     public void containsKey(){
-        ThreadSafeMap<String, Integer> map = new ThreadSafeMap<>();
+        ThreadSafeMap<String,Integer> map = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
@@ -70,7 +70,7 @@ public class ThreadSafeMapTest {
 
     @Test
     public void containsValue(){
-        ThreadSafeMap<String, Integer> map = new ThreadSafeMap<>();
+        ThreadSafeMap<String,Integer> map = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
@@ -94,7 +94,7 @@ public class ThreadSafeMapTest {
 
     @Test
     public void get(){
-        ThreadSafeMap<String, Integer> map = new ThreadSafeMap<>();
+        ThreadSafeMap<String,Integer> map = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         int chunkSize = this.testCase.size() / 10;
         int from = 0, to = chunkSize;
@@ -122,7 +122,7 @@ public class ThreadSafeMapTest {
 
     @Test
     public void remove(){
-        ThreadSafeMap<String, Integer> map = new ThreadSafeMap<>();
+        ThreadSafeMap<String,Integer> map = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         values.forEach(i -> map.put(i.toString(), i));
         int chunkSize = this.testCase.size() / 10;
