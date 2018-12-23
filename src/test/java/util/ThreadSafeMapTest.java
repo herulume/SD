@@ -41,10 +41,6 @@ public class ThreadSafeMapTest {
     }
 
     @Test
-    public void isEmpty(){
-    }
-
-    @Test
     public void containsKey(){
         ThreadSafeMap<String,Integer> map = new ThreadSafeMap<>();
         ArrayList<Integer> values = IntStream.range(0, 10000).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
@@ -114,10 +110,6 @@ public class ThreadSafeMapTest {
             }catch(InterruptedException ignored){
             }
         }
-    }
-
-    @Test
-    public void put(){
     }
 
     @Test
