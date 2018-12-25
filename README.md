@@ -14,33 +14,31 @@
 - socketServer :`SocketServer`
 
 ### AuctionHouse (mutable)
-- stock :`List<Item>`
-- auctions :`Map<Integer, TopBid>`
-- reserved :`Map<String, Droplet>`
-- clients :`Map<String, Client>`
+- stock    :`ThreadSafeMap<ServerType, Integer>`
+- auctions :`ThreadSafeMap<Integer, TopBid>`
+- reserved :`ThreadSafeMap<Integer, Droplet>`
+- clients  :`ThreadSafeMap<String, Client>`
 
 ### Client (mutable)
-- email :`String`
+- email    :`String`
 - passowrd :`String`
-- socket :`Socket @Nullable` (mutable atribute)
-
-### Item
-- id: `int`
-- type :`ServerType`
+- socket   :`Socket @Nullable` (mutable atribute)
 
 ### Droplet
-- item :`Item`
+- id          :`int`
+- type        :`ServerType`
 - clientEmail :`String`
 
 ### TopBid
-- item :`Item`
-- owner :`String`
+- id     :`int`
+- type   :`ServerType`
+- owner  :`String`
 - amount :`int`
 
 ### Client-Connection (Worker Thread)
 - auctionHouse :`AuctionHouse`
-- Socket :`Socket`
-- clientEmail :`String`
+- Socket       :`Socket`
+- clientEmail  :`String`
 
 ### ServerType
 Enum with server types and their prices
