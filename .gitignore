@@ -26,6 +26,9 @@ hs_err_pid*
 # intellij stuff
 .idea/
 
+# maven
+target/
+
 # netbeans stuff
 nbproject/
 build/
