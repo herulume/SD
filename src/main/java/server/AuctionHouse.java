@@ -1,6 +1,6 @@
 package server;
 
-import server.Exception.*;
+import server.exception.*;
 import util.Pair;
 import util.ThreadSafeMap;
 import util.ThreadSafeMutMap;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 public class AuctionHouse {
     private Map<String, User> users;
+    private Map<String, Float> debtDeadServers;
     private ThreadSafeMutMap<ServerType, Auction> auctions;
     private Map<Integer, Droplet> reservedD;
     private ThreadSafeMutMap<Integer, Auction> reservedA;
@@ -18,6 +19,7 @@ public class AuctionHouse {
 
     AuctionHouse() {
         this.users = new ThreadSafeMap<>();
+        this.debtDeadServers = new ThreadSafeMap<>();
         this.auctions = new ThreadSafeMutMap<>();
         this.reservedD = new ThreadSafeMap<>();
         this.reservedA = new ThreadSafeMutMap<>();
@@ -30,6 +32,7 @@ public class AuctionHouse {
             throw new UserAlreadyExistsException("Email already registered");
         }
         this.users.put(email, new User(name, email, password));
+        this.debtDeadServers.put(email, 0f);
     }
 
     public User login(String email, String password) throws LoginException {
@@ -65,7 +68,10 @@ public class AuctionHouse {
                 if (!(a.highestBidder().equals(user))) {
                     throw new ServerPermissionException("That server doesn't belong to you");
                 } else {
+                    // TODO Need to lock deadServers
                     this.reservedA.remove(serverID);
+                    float newCost = this.debtDeadServers.get(user.getEmail()) + a.cost();
+                    this.debtDeadServers.put(user.getEmail(), newCost);
                     return a.getId();
                 }
             } finally {
@@ -78,7 +84,10 @@ public class AuctionHouse {
             if (!(d.getOwner().equals(user))) {
                 throw new ServerPermissionException("That server doesn't belong to you");
             } else {
+                // TODO Need to lock deadServers
                 this.reservedD.remove(serverID);
+                float newCost = this.debtDeadServers.get(user.getEmail()) + d.cost();
+                this.debtDeadServers.put(user.getEmail(), newCost);
                 return d.getId();
             }
         }
@@ -121,9 +130,7 @@ public class AuctionHouse {
         Objects.requireNonNull(st);
         Objects.requireNonNull(bid);
 
-        Auction previous = this.auctions.getLocked(st);
-        if (previous != null) {
-            previous.unlock();
+        if (this.auctions.containsKey(st)) {
             throw new AuctionOfTypeRunningException("An auction of that type is already running");
         } else {
             Auction auction = new Auction(st, bid);
@@ -133,6 +140,7 @@ public class AuctionHouse {
         }
     }
 
+    // TODO This should a transaction
     public void bid(int aucID, Bid bid) throws LowerBidException, InvalidAuctionException, NoRunningAuctionsException {
         Objects.requireNonNull(bid);
 

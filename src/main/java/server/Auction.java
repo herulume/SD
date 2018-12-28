@@ -1,6 +1,6 @@
 package server;
 
-import server.Exception.LowerBidException;
+import server.exception.LowerBidException;
 import util.Lockable;
 
 import java.util.Objects;
@@ -45,10 +45,6 @@ public class Auction implements Lockable {
         return this.item;
     }
 
-    public float actualCost() {
-        return this.item.cost();
-    }
-
     public float highestBid() {
         try {
             this.lock.readLock().lock();
@@ -65,6 +61,11 @@ public class Auction implements Lockable {
         } finally {
             this.lock.readLock().unlock();
         }
+    }
+
+    // TODO Implement this after putting the timer
+    public float cost() {
+        return this.highestBid();
     }
 
     @Override
@@ -106,4 +107,5 @@ public class Auction implements Lockable {
     public int hashCode() {
         return Objects.hash(id);
     }
+
 }

@@ -29,6 +29,11 @@ public class Droplet {
         return this.item;
     }
 
+    // TODO Implement this after putting the timer
+    float cost() {
+        return this.item.cost();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
