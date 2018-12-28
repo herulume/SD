@@ -1,5 +1,7 @@
 package server;
 
+import server.middleware.Session;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,6 +15,7 @@ public class Server {
 
         while (true) {
             Socket clientSocket = server.accept();
+            new Thread(new Session(clientSocket, auctionHouse)).start();
         }
     }
 }
