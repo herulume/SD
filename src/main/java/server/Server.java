@@ -15,8 +15,6 @@ public class Server {
 
         while (true) {
             Socket clientSocket = server.accept();
-            Session clientSession = new Session(auctionHouse, clientSocket);
-            clientSession.start();
         }
     }
 }
