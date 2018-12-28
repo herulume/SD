@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Droplet {
     private final int id;
-    private User owner;
+    private final User owner;
     private final ServerType item;
 
     private static int idN = 0;
