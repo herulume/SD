@@ -14,10 +14,11 @@
 - socketServer :`SocketServer`
 
 ### AuctionHouse (mutable)
-- stock    :`ThreadSafeMap<ServerType, Integer>`
-- auctions :`ThreadSafeMap<Integer, TopBid>`
-- reserved :`ThreadSafeMap<Integer, Droplet>`
-- clients  :`ThreadSafeMap<String, Client>`
+- stock     :`ThreadSafeMap<ServerType, Integer>`
+- auctions  :`ThreadSafeMap<ServerType, Auction>`
+- reserved  :`ThreadSafeMap<Integer, Droplet>`
+- auctioned :`ThreadSafeMap<Integer, Droplet>`
+- clients   :`ThreadSafeMap<String, Client>`
 
 ### Client (mutable)
 - email    :`String`
@@ -29,7 +30,7 @@
 - type        :`ServerType`
 - clientEmail :`String`
 
-### TopBid
+### Auction
 - id     :`int`
 - type   :`ServerType`
 - owner  :`String`
