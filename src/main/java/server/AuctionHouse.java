@@ -58,10 +58,9 @@ public class AuctionHouse {
         return Pair.of(auctions, droplets);
     }
 
-    // TODO This should be a transaction
     public int dropServer(int serverID, User user) throws ServerNotFound, ServerPermissionException {
-        if (this.reservedA.containsKey(serverID)) {
-            Auction a = this.reservedA.getLocked(serverID);
+        Auction a = this.reservedA.getLocked(serverID);
+        if (a != null) {
             try {
                 if (!(a.highestBidder().equals(user))) {
                     throw new ServerPermissionException("That server doesn't belong to you");
@@ -87,7 +86,7 @@ public class AuctionHouse {
         throw new ServerNotFound("No server with that id found");
     }
 
-    public List<ServerType> listAvailableDroples() {
+    public List<ServerType> listAvailableServers() {
         return this.stock.entrySet().stream()
                 .filter(p -> p.getKey().cost() > 0)
                 .map(Map.Entry::getKey)
@@ -97,7 +96,7 @@ public class AuctionHouse {
     // TODO This should be a transaction
     public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStock {
         if (this.stock.get(st) == 0) {
-            throw new DropletOfTypeWithoutStock("No stock for that type");
+            throw new DropletOfTypeWithoutStock("No stock for type: " + st.getName());
         } else {
             Droplet d = new Droplet(user, st);
             this.reservedD.put(d.getId(), d);
@@ -152,8 +151,11 @@ public class AuctionHouse {
             if (auc == null) {
                 throw new InvalidAuctionException("No auction with that id running");
             } else {
-                auc.bid(bid);
-                auc.unlock();
+                try {
+                    auc.bid(bid);
+                } finally {
+                    auc.unlock();
+                }
             }
         }
     }
