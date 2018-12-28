@@ -11,8 +11,8 @@ public class Bid {
         this.value = value;
     }
 
-    String buyer() {
-        return this.buyer.getName();
+    User buyer() {
+        return this.buyer;
     }
 
     float value() {

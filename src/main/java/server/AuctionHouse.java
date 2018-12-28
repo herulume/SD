@@ -1,24 +1,26 @@
 package server;
 
 import server.Exception.*;
+import util.Pair;
 import util.ThreadSafeMap;
 import util.ThreadSafeMutMap;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class AuctionHouse {
     private Map<String, User> users;
     private ThreadSafeMutMap<ServerType, Auction> auctions;
     private Map<Integer, Droplet> reservedD;
-    private Map<Integer, Auction> reservedA;
+    private ThreadSafeMutMap<Integer, Auction> reservedA;
     private Map<ServerType, Integer> stock;
 
     AuctionHouse() {
         this.users = new ThreadSafeMap<>();
         this.auctions = new ThreadSafeMutMap<>();
         this.reservedD = new ThreadSafeMap<>();
-        this.reservedA = new ThreadSafeMap<>();
+        this.reservedA = new ThreadSafeMutMap<>();
         this.stock = new ThreadSafeMap<>();
     }
 
@@ -40,12 +42,79 @@ public class AuctionHouse {
         return user;
     }
 
+    public Pair<List<Auction>, List<Droplet>> listOwnedServers(String email) {
+        List<Droplet> droplets = this.reservedD.values().stream()
+                .filter(d -> email.equals(d.getOwner().getEmail()))
+                .collect(Collectors.toList());
+
+        List<Auction> auctions = new LinkedList<>();
+        for (Auction a : this.reservedA.valuesLocked()) {
+            if (email.equals(a.highestBidder().getEmail())) {
+                auctions.add((Auction) a.clone());
+            }
+            a.unlock();
+        }
+
+        return Pair.of(auctions, droplets);
+    }
+
+    // TODO This should be a transaction
+    public int dropServer(int serverID, User user) throws ServerNotFound, ServerPermissionException {
+        if (this.reservedA.containsKey(serverID)) {
+            Auction a = this.reservedA.getLocked(serverID);
+            try {
+                if (!(a.highestBidder().equals(user))) {
+                    throw new ServerPermissionException("That server doesn't belong to you");
+                } else {
+                    this.reservedA.remove(serverID);
+                    return a.getId();
+                }
+            } finally {
+                a.unlock();
+            }
+        }
+
+        if (this.reservedD.containsKey(serverID)) {
+            Droplet d = this.reservedD.remove(serverID);
+            if (!(d.getOwner().equals(user))) {
+                throw new ServerPermissionException("That server doesn't belong to you");
+            } else {
+                this.reservedD.remove(serverID);
+                return d.getId();
+            }
+        }
+
+        throw new ServerNotFound("No server with that id found");
+    }
+
+    public List<ServerType> listAvailableDroples() {
+        return this.stock.entrySet().stream()
+                .filter(p -> p.getKey().cost() > 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    // TODO This should be a transaction
+    public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStock {
+        if (this.stock.get(st) == 0) {
+            throw new DropletOfTypeWithoutStock("No stock for that type");
+        } else {
+            Droplet d = new Droplet(user, st);
+            this.reservedD.put(d.getId(), d);
+
+            Integer previousStock = this.stock.get(st);
+            this.stock.put(st, previousStock - 1);
+
+            return d.getId();
+        }
+    }
+
     public List<Auction> listRunningAuctions() {
         List<Auction> auctionsL = new LinkedList<>();
-        this.auctions.valuesLocked().forEach(a -> {
+        for (Auction a : this.auctions.valuesLocked()) {
             auctionsL.add((Auction) a.clone());
             a.unlock();
-        });
+        }
         return auctionsL;
     }
 
@@ -65,7 +134,7 @@ public class AuctionHouse {
         }
     }
 
-    public void bid(int auctionID, Bid bid) throws LowerBidException, InvalidAuctionException, NoRunningAuctionsException {
+    public void bid(int aucID, Bid bid) throws LowerBidException, InvalidAuctionException, NoRunningAuctionsException {
         Objects.requireNonNull(bid);
 
         Collection<Auction> aucs = this.auctions.valuesLocked();
@@ -74,7 +143,7 @@ public class AuctionHouse {
         } else {
             Auction auc = null;
             for (Auction a : aucs) {
-                if (auctionID == a.getId()) {
+                if (aucID == a.getId()) {
                     auc = a;
                 } else {
                     a.unlock();
@@ -84,6 +153,7 @@ public class AuctionHouse {
                 throw new InvalidAuctionException("No auction with that id running");
             } else {
                 auc.bid(bid);
+                auc.unlock();
             }
         }
     }

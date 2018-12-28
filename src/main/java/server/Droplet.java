@@ -21,11 +21,24 @@ public class Droplet {
         return this.id;
     }
 
-    String getOwner() {
-        return this.owner.getName();
+    User getOwner() {
+        return this.owner;
     }
 
     ServerType getItem() {
         return this.item;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Droplet droplet = (Droplet) o;
+        return id == droplet.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

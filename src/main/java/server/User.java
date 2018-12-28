@@ -21,6 +21,10 @@ public class User {
         return this.name;
     }
 
+    String getEmail() {
+        return this.email;
+    }
+
     boolean authenticate(String password) {
         return this.password.equals(password);
     }
@@ -37,15 +41,16 @@ public class User {
         this.messages.reset();
     }
 
-
+    @Override
     public boolean equals(Object o) {
-        if (o == this)
-            return true;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(email, user.email);
+    }
 
-        if (o == null || (this.getClass() != o.getClass()))
-            return false;
-
-        User usr = (User) o;
-        return this.email.equals(usr.email);
+    @Override
+    public int hashCode() {
+        return Objects.hash(email);
     }
 }

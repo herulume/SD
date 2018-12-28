@@ -58,7 +58,7 @@ public class Auction implements Lockable {
         }
     }
 
-    private String highestBidder() {
+    public User highestBidder() {
         try {
             this.lock.readLock().lock();
             return this.highestBid.buyer();
@@ -92,5 +92,18 @@ public class Auction implements Lockable {
         this.item = st;
         this.id = id;
         this.lock = new ReentrantReadWriteLock();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Auction auction = (Auction) o;
+        return id == auction.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }
