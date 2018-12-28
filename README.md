@@ -4,46 +4,30 @@
     <img src="https://travis-ci.com/herulume/SD.svg?token=aipGLrKNf4KH91HZ2mFw&branch=master" alt="Build Status">
 </p>
 
-## SD
+# SD
 
 
 ## Base Structure
 
 ### Main
-- auctionHouse : `AuctionHouse`
-- socketServer :`SocketServer`
+- Telnet like client : `Client`
+- Server :`Server`
 
-### AuctionHouse (mutable)
-- stock :`List<Item>`
-- auctions :`Map<Integer, TopBid>`
-- reserved :`Map<String, Droplet>`
-- clients :`Map<String, Client>`
+### Server
+- Server : `Server`
+- Auction House (mut) :`AuctionHouse` 
+- Middleware to manage sessions :`Session`
+- Parser / Command interpreter : `Parser`
 
-### Client (mutable)
-- email :`String`
-- passowrd :`String`
-- socket :`Socket @Nullable` (mutable atribute)
+### Parts of server
+- Bid (USer / amount) : `Bid`
+- Server to rent : `Droplet`
+- Auction (mut)  : `Auction`
+- Catalog of servers : `ServerType`
+- Clients / Users : `User`
 
-### Item
-- id: `int`
-- type :`ServerType`
-
-### Droplet
-- item :`Item`
-- clientEmail :`String`
-
-### TopBid
-- item :`Item`
-- owner :`String`
-- amount :`int`
-
-### Client-Connection (Worker Thread)
-- auctionHouse :`AuctionHouse`
-- Socket :`Socket`
-- clientEmail :`String`
-
-### ServerType
-Enum with server types and their prices
+### Client
+- Telnet like client : `Client`
 
 ## Extra points
 Reutilize Workers (Client-Connection)
