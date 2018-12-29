@@ -1,5 +1,7 @@
 package server;
 
+import java.util.Optional;
+
 public enum ServerType {
     I(12.3f, "ts1.lower"), B(203.3f, "ts2.high");
 
@@ -19,14 +21,14 @@ public enum ServerType {
         return this.name;
     }
 
-    public static ServerType fromString(String st) {
+    public static Optional<ServerType> fromString(String st) {
         switch (st.toUpperCase()) {
             case "ts1.lower":
-                return ServerType.I;
+                return Optional.of(ServerType.I);
             case "ts2.high":
-                return ServerType.B;
+                return Optional.of(ServerType.B);
             default:
-                return ServerType.I;
+                return Optional.empty();
         }
     }
 }

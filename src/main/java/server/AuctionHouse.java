@@ -49,20 +49,11 @@ public class AuctionHouse {
         return user;
     }
 
-    public Pair<List<Auction>, List<Droplet>> listOwnedServers(String email) {
-        List<Droplet> droplets = this.reservedD.values().stream()
-                .filter(d -> email.equals(d.getOwner().getEmail()))
+    public List<Pair<ServerType, Integer>> listOwnedServers(String email) {
+        return this.stock.entrySet().stream()
+                .filter(p -> p.getValue() > 0)
+                .map(p -> Pair.of(p.getKey(), p.getValue()))
                 .collect(Collectors.toList());
-
-        List<Auction> auctions = new LinkedList<>();
-        for (Auction a : this.reservedA.valuesLocked()) {
-            if (email.equals(a.highestBidder().getEmail())) {
-                auctions.add((Auction) a.clone());
-            }
-            a.unlock();
-        }
-
-        return Pair.of(auctions, droplets);
     }
 
     public int dropServer(int serverID, User user) throws ServerNotFound, ServerPermissionException {
