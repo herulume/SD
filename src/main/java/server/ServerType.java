@@ -1,7 +1,7 @@
 package server;
 
 public enum ServerType {
-    I(12.3f, "SUPER BARATO"), B(203.3f, "SUPER CARO");
+    I(12.3f, "ts1.lower"), B(203.3f, "ts2.high");
 
     private final float cost;
     private final String name;
@@ -17,5 +17,16 @@ public enum ServerType {
 
     public String getName() {
         return this.name;
+    }
+
+    public static ServerType fromString(String st) {
+        switch (st.toUpperCase()) {
+            case "ts1.lower":
+                return ServerType.I;
+            case "ts2.high":
+                return ServerType.B;
+            default:
+                return ServerType.I;
+        }
     }
 }

@@ -11,11 +11,13 @@ import java.util.stream.Collectors;
 
 public class AuctionHouse {
     private Map<String, User> users;
-    private Map<String, Float> debtDeadServers;
+    private ThreadSafeMap<String, Float> debtDeadServers;
     private ThreadSafeMutMap<ServerType, Auction> auctions;
     private Map<Integer, Droplet> reservedD;
     private ThreadSafeMutMap<Integer, Auction> reservedA;
-    private Map<ServerType, Integer> stock;
+    private ThreadSafeMap<ServerType, Integer> stock;
+
+    private static final int initialStock = 20;
 
     AuctionHouse() {
         this.users = new ThreadSafeMap<>();
@@ -24,11 +26,13 @@ public class AuctionHouse {
         this.reservedD = new ThreadSafeMap<>();
         this.reservedA = new ThreadSafeMutMap<>();
         this.stock = new ThreadSafeMap<>();
+
+        Arrays.stream(ServerType.values()).forEach(st -> this.stock.put(st, AuctionHouse.initialStock));
     }
 
     public void signUp(String email, String password, String name) throws UserAlreadyExistsException {
         User u = this.users.get(email);
-        if (u == null) {
+        if (u != null) {
             throw new UserAlreadyExistsException("Email already registered");
         }
         this.users.put(email, new User(name, email, password));
@@ -68,10 +72,16 @@ public class AuctionHouse {
                 if (!(a.highestBidder().equals(user))) {
                     throw new ServerPermissionException("That server doesn't belong to you");
                 } else {
-                    // TODO Need to lock deadServers
+                    this.stock.lock();
+
                     this.reservedA.remove(serverID);
+
                     float newCost = this.debtDeadServers.get(user.getEmail()) + a.cost();
                     this.debtDeadServers.put(user.getEmail(), newCost);
+                    int newStock = this.stock.get(a.getType()) + 1;
+                    this.stock.put(a.getType(), newStock);
+
+                    this.stock.unlock();
                     return a.getId();
                 }
             } finally {
@@ -84,10 +94,17 @@ public class AuctionHouse {
             if (!(d.getOwner().equals(user))) {
                 throw new ServerPermissionException("That server doesn't belong to you");
             } else {
-                // TODO Need to lock deadServers
+                this.stock.lock();
+
                 this.reservedD.remove(serverID);
+
                 float newCost = this.debtDeadServers.get(user.getEmail()) + d.cost();
                 this.debtDeadServers.put(user.getEmail(), newCost);
+
+                int newStock = this.stock.get(d.getItem()) + 1;
+                this.stock.put(d.getItem(), newStock);
+
+                this.stock.unlock();
                 return d.getId();
             }
         }
@@ -95,25 +112,38 @@ public class AuctionHouse {
         throw new ServerNotFound("No server with that id found");
     }
 
-    public List<ServerType> listAvailableServers() {
-        return this.stock.entrySet().stream()
-                .filter(p -> p.getKey().cost() > 0)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+    public Pair<List<ServerType>, List<Integer>> listAvailableServers() {
+        List<ServerType> stL = new LinkedList<>();
+        List<Integer> stockL = new LinkedList<>();
+
+        this.stock.lock();
+        for (Map.Entry<ServerType, Integer> kv : this.stock.entrySet()) {
+            if (kv.getValue() > 0) {
+                stL.add(kv.getKey());
+                stockL.add(kv.getValue());
+            }
+        }
+        this.stock.unlock();
+
+        return Pair.of(stL, stockL);
     }
 
-    // TODO This should be a transaction
     public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStock {
-        if (this.stock.get(st) == 0) {
-            throw new DropletOfTypeWithoutStock("No stock for type: " + st.getName());
-        } else {
-            Droplet d = new Droplet(user, st);
-            this.reservedD.put(d.getId(), d);
+        this.stock.lock();
+        try {
+            if (this.stock.get(st) == 0) {
+                throw new DropletOfTypeWithoutStock("No stock for type: " + st.getName());
+            } else {
+                Droplet d = new Droplet(user, st);
+                this.reservedD.put(d.getId(), d);
 
-            Integer previousStock = this.stock.get(st);
-            this.stock.put(st, previousStock - 1);
+                Integer previousStock = this.stock.get(st);
+                this.stock.put(st, previousStock - 1);
 
-            return d.getId();
+                return d.getId();
+            }
+        } finally {
+            this.stock.unlock();
         }
     }
 
@@ -140,7 +170,6 @@ public class AuctionHouse {
         }
     }
 
-    // TODO This should a transaction
     public void bid(int aucID, Bid bid) throws LowerBidException, InvalidAuctionException, NoRunningAuctionsException {
         Objects.requireNonNull(bid);
 
