@@ -43,6 +43,11 @@ public class Droplet {
     }
 
     @Override
+    public String toString(){
+        return this.id + " \t " + this.item.getName();
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(id);
     }

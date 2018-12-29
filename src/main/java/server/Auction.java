@@ -104,6 +104,11 @@ public class Auction implements Lockable {
     }
 
     @Override
+    public String toString(){
+        return this.id + "\t" + this.item.getName() + "\t" + highestBid.value();
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(id);
     }
