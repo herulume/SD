@@ -21,7 +21,7 @@ public class User {
         return this.name;
     }
 
-    String getEmail() {
+    public String getEmail() {
         return this.email;
     }
 

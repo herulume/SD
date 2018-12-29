@@ -15,26 +15,22 @@ public class Client {
 
     public static void main(String[] args){
         try{
-            s = new Socket("localhost", 12345);
+            s = new Socket("localhost", 5000);
             reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            writer = new PrintWriter(new OutputStreamWriter(s.getOutputStream()));
+            writer = new PrintWriter(new OutputStreamWriter(s.getOutputStream()), /*auto flush*/ true);
             console = new Scanner(System.in);
-            if(reader.ready()){
-                String serverMessage = reader.readLine();
-                out.println(serverMessage);
-                if(serverMessage == null) return;
-            }
             for(; ; ){
                 out.print("§ ");
                 out.flush();
-                String message = console.nextLine();
+                String message = console.nextLine().trim();
                 writer.println(message);
-                writer.flush();
-                String serverMessage = reader.readLine();
-                out.println(serverMessage);
-                if(message.trim().equals("quit") || serverMessage == null){
-                    break;
-                }
+                String serverMessage;
+                do{
+                    serverMessage = reader.readLine();
+                    if(serverMessage == null) return;
+                    if(!serverMessage.isEmpty()) out.println(serverMessage);
+                }while(reader.ready());
+                if(message.equals("quit")) break;
             }
         }catch(IOException e){
             System.err.println(e.getMessage());
