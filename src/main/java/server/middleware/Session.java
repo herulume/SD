@@ -90,9 +90,9 @@ public class Session implements Runnable {
     }
 
     private String register(List<String> command){
-        if(command.size() < 3) return "Usage: register <email> <username> <password>";
+        if(command.size() < 3) return "Usage: register <email> <password> <username>";
         try{
-            this.auctionHouse.signUp(command.get(0), command.get(2), command.get(1));
+            this.auctionHouse.signUp(command.get(0), command.get(1), command.get(2));
             return "Registered successfully";
         }catch(UserAlreadyExistsException e){
             return e.getMessage();
