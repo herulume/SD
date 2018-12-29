@@ -50,6 +50,11 @@ public class User {
     }
 
     @Override
+    public String toString(){
+        return "name: " + this.name + '\n' + "email: " + this.email;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(email);
     }
