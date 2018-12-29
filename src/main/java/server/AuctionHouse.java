@@ -73,7 +73,7 @@ public class AuctionHouse {
                     throw new ServerPermissionException("That server doesn't belong to you");
                 } else {
                     this.stock.lock();
-
+                    this.debtDeadServers.lock();
                     this.reservedA.remove(serverID);
 
                     float newCost = this.debtDeadServers.get(user.getEmail()) + a.cost();
@@ -82,6 +82,7 @@ public class AuctionHouse {
                     this.stock.put(a.getType(), newStock);
 
                     this.stock.unlock();
+                    this.debtDeadServers.unlock();
                     return a.getId();
                 }
             } finally {
@@ -95,7 +96,7 @@ public class AuctionHouse {
                 throw new ServerPermissionException("That server doesn't belong to you");
             } else {
                 this.stock.lock();
-
+                this.debtDeadServers.lock();
                 this.reservedD.remove(serverID);
 
                 float newCost = this.debtDeadServers.get(user.getEmail()) + d.cost();
@@ -104,6 +105,7 @@ public class AuctionHouse {
                 int newStock = this.stock.get(d.getItem()) + 1;
                 this.stock.put(d.getItem(), newStock);
 
+                this.debtDeadServers.lock();
                 this.stock.unlock();
                 return d.getId();
             }
