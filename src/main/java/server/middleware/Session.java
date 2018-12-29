@@ -61,11 +61,9 @@ public class Session implements Runnable {
                     in.close();
                 }
                 this.socket.close();
-
             }catch(IOException ignored){
             }
         }
-        // FUCK JAVA AND ITS DUMB FUCKING EXCEPTIONS
     }
 
     private String runCommand(List<String> command){
@@ -90,7 +88,6 @@ public class Session implements Runnable {
                 return "Command not found: " + command.get(0);
         }
     }
-
 
     private String register(List<String> command){
         if(command.size() < 3) return "Usage: register <email> <username> <password>";
@@ -191,7 +188,7 @@ public class Session implements Runnable {
         }catch(AuctionOfTypeRunningException e){
             return e.getMessage();
         }catch(NumberFormatException e){
-            return "Invalid id: " + command.get(0);
+            return "Invalid amount: " + command.get(0);
         }
     }
 
@@ -199,13 +196,18 @@ public class Session implements Runnable {
         if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 2) return "Usage: <amount> <id>";
         try{
-            Bid b = new Bid(this.user, Float.parseFloat(command.get(0)));
+            Bid b;
+            try{
+                b = new Bid(this.user, Float.parseFloat(command.get(0)));
+            }catch(NumberFormatException e){
+                return "Invalid amount: " + command.get(0);
+            }
             this.auctionHouse.bid(Integer.parseInt(command.get(1)), b);
             return "Bid placed!";
+        }catch(NumberFormatException e){
+            return "Invalid id: " + command.get(1);
         }catch(InvalidAuctionException | NoRunningAuctionsException | LowerBidException e){
             return e.getMessage();
-        }catch(NumberFormatException e){
-            return "Invalid number: " + e.getMessage();
         }
     }
 
@@ -213,3 +215,4 @@ public class Session implements Runnable {
         return Arrays.stream(ServerType.values()).map(ServerType::getName).collect(Collectors.toList()).toString();
     }
 }
+
