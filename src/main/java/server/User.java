@@ -33,7 +33,7 @@ public class User {
         this.messages.write(message);
     }
 
-    String readNotification() throws InterruptedException {
+    public String readNotification() throws InterruptedException {
         return this.messages.read();
     }
 
