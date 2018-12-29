@@ -123,14 +123,32 @@ public class Session implements Runnable {
         if(command.get(0).equals("-m")){
             Pair<String,String> possessions = auctionHouse.listOwnedServers(this.user.getEmail())
                     .mapFirst(x -> x.stream().map(Auction::toString).collect(Collectors.joining("\n")))
-                    .mapSecond(x -> x.stream().map(Droplet::toString).collect(Collectors.joining("\n")));
-            return possessions.getFirst() + "\n\n" + possessions.getSecond();
+                    .mapSecond(x -> x.stream().map(Droplet::toString).collect(Collectors.joining("\n")))
+                    .swap();
+            StringBuilder result = new StringBuilder("DROPLETS:\n");
+            if(possessions.getFirst().isEmpty()){
+                result.append("You have no droplets\n");
+            }else{
+                result.append("ID\tNAME\n=======================\n")
+                        .append(possessions.getFirst())
+                        .append("\n");
+            }
+            result.append("AUCTIONED DROPLETS:\n");
+            if(possessions.getSecond().isEmpty()){
+                result.append("You have no auctioned droplets\n");
+            }else{
+                result.append("\nID\tNAME\tPRICE PAID\n=======================\n")
+                        .append(possessions.getSecond())
+                        .append("\n");
+            }
+            return result.toString();
         }
         if(command.get(0).equals("-a")){
-            return auctionHouse.listRunningAuctions()
-                    .stream()
-                    .map(Auction::toString)
-                    .reduce("", (x, y) -> x + "\n" + y);
+            return "\nID\tNAME\tHIGHEST BID\n=======================\n" +
+                    auctionHouse.listRunningAuctions()
+                            .stream()
+                            .map(Auction::toString)
+                            .reduce("", (x, y) -> x + "\n" + y);
         }
         return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions";
     }
