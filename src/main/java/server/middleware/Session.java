@@ -31,8 +31,8 @@ public class Session implements Runnable {
         PrintWriter out = null;
         try{
             try{
-                out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()),/*auto flush*/true);
-                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(new OutputStreamWriter(this.socket.getOutputStream()),/*auto flush*/true);
+                in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             }catch(IOException e){
                 System.out.println("Couldn't set up IO: " + e.getMessage());
                 return;
@@ -95,7 +95,7 @@ public class Session implements Runnable {
     private String register(List<String> command){
         if(command.size() < 3) return "Usage: register <email> <username> <password>";
         try{
-            auctionHouse.signUp(command.get(0), command.get(2), command.get(1));
+            this.auctionHouse.signUp(command.get(0), command.get(2), command.get(1));
             return "Registered successfully";
         }catch(UserAlreadyExistsException e){
             return e.getMessage();
@@ -105,7 +105,7 @@ public class Session implements Runnable {
     private String login(List<String> command){
         if(command.size() < 2) return "Usage: login <email> <password>";
         try{
-            this.user = auctionHouse.login(command.get(0), command.get(1));
+            this.user = this.auctionHouse.login(command.get(0), command.get(1));
             return "Logged in";
         }catch(LoginException e){
             return e.getMessage();
@@ -113,15 +113,15 @@ public class Session implements Runnable {
     }
 
     private String ls(List<String> command){
-        if(user == null) return LOGIN_REQUIRED;
+        if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() == 0){
-            return auctionHouse.listAvailableServers()
+            return this.auctionHouse.listAvailableServers()
                     .stream()
                     .map(ServerType::getName)
                     .reduce("", (x, y) -> x + "\n" + y);
         }
         if(command.get(0).equals("-m")){
-            Pair<String,String> possessions = auctionHouse.listOwnedServers(this.user.getEmail())
+            Pair<String,String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
                     .mapFirst(x -> x.stream().map(Auction::toString).collect(Collectors.joining("\n")))
                     .mapSecond(x -> x.stream().map(Droplet::toString).collect(Collectors.joining("\n")))
                     .swap();
@@ -145,7 +145,7 @@ public class Session implements Runnable {
         }
         if(command.get(0).equals("-a")){
             return "\nID\tNAME\tHIGHEST BID\n=======================\n" +
-                    auctionHouse.listRunningAuctions()
+                    this.auctionHouse.listRunningAuctions()
                             .stream()
                             .map(Auction::toString)
                             .reduce("", (x, y) -> x + "\n" + y);
@@ -154,7 +154,7 @@ public class Session implements Runnable {
     }
 
     private String buy(List<String> command){
-        if(user == null) return LOGIN_REQUIRED;
+        if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 1) return "Usage: buy " + serverTypes();
         try{
             int id = this.auctionHouse.requestDroplet(ServerType.valueOf(command.get(0)), this.user);
@@ -169,7 +169,7 @@ public class Session implements Runnable {
     }
 
     private String dropServer(List<String> command){
-        if(this.user == null) return LOGIN_REQUIRED;
+        if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 1) return "Usage: drop <id>";
         try{
             int id = this.auctionHouse.dropServer(Integer.parseInt(command.get(0)), this.user);
@@ -182,7 +182,7 @@ public class Session implements Runnable {
     }
 
     private String auction(List<String> command){
-        if(this.user == null) return LOGIN_REQUIRED;
+        if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 2) return "Usage: auction <amount> " + serverTypes();
         try{
             Bid b = new Bid(this.user, Float.parseFloat(command.get(0)));
@@ -196,7 +196,7 @@ public class Session implements Runnable {
     }
 
     private String bid(List<String> command){
-        if(this.user == null) return LOGIN_REQUIRED;
+        if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 2) return "Usage: <amount> <id>";
         try{
             Bid b = new Bid(this.user, Float.parseFloat(command.get(0)));
