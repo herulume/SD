@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Session implements Runnable {
@@ -112,10 +114,11 @@ public class Session implements Runnable {
     private String ls(List<String> command){
         if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() == 0){
-            return this.auctionHouse.listAvailableServers()
-                    .stream()
-                    .map(ServerType::getName)
-                    .reduce("", (x, y) -> x + "\n" + y);
+            return "NAME\t\tAMOUNT IN STOCK\n" +
+                    this.auctionHouse.listAvailableServers()
+                            .stream()
+                            .map(x -> x.getFirst().getName() + "\t" + x.getSecond())
+                            .reduce("", (x, y) -> x + "\n" + y);
         }
         if(command.get(0).equals("-m")){
             Pair<String,String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
@@ -154,8 +157,13 @@ public class Session implements Runnable {
         if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() < 1) return "Usage: buy " + serverTypes();
         try{
-            int id = this.auctionHouse.requestDroplet(ServerType.valueOf(command.get(0)), this.user);
-            return "Purchase successful! Id: " + id;
+            Optional<ServerType> tp = ServerType.fromString(command.get(0));
+            if(tp.isPresent()){
+                int id = this.auctionHouse.requestDroplet(tp.get(), this.user);
+                return "Purchase successful! Id: " + id;
+            }else{
+                return "Invalid server type: " + command.get(0) + "\nAvailable server types: " + serverTypes();
+            }
         }catch(DropletOfTypeWithoutStock e){
             return e.getMessage();
         }
@@ -171,7 +179,7 @@ public class Session implements Runnable {
         try{
             int id = this.auctionHouse.dropServer(Integer.parseInt(command.get(0)), this.user);
             return "Server " + id + " dropped!";
-        }catch(ServerPermissionException | ServerNotFound e){
+        }catch(ServerPermissionException | ServerNotFoundException e){
             return e.getMessage();
         }catch(NumberFormatException e){
             return "Invalid id: " + command.get(0);
@@ -183,8 +191,12 @@ public class Session implements Runnable {
         if(command.size() < 2) return "Usage: auction <amount> " + serverTypes();
         try{
             Bid b = new Bid(this.user, Float.parseFloat(command.get(0)));
-            int id = this.auctionHouse.startAuction(ServerType.valueOf(command.get(1)), b);
-            return "Auction started: " + id;
+            Optional<ServerType> st = ServerType.fromString(command.get(1));
+            if(st.isPresent()){
+                return "Auction started: " + this.auctionHouse.startAuction(st.get(), b);
+            }else{
+                return "Invalid server type: " + command.get(0) + "\nAvailable server types: " + serverTypes();
+            }
         }catch(AuctionOfTypeRunningException e){
             return e.getMessage();
         }catch(NumberFormatException e){
