@@ -13,7 +13,7 @@ public class AtomicIntTest {
     public void fetchOp() throws InterruptedException {
         final AtomicInt aInt = new AtomicInt(0);
         List<Thread> threads = IntStream.range(0, 1000)
-                .mapToObj(i -> new Thread(() -> aInt.fetchOp(x -> x + 1)))
+                .mapToObj(i -> new Thread(() -> aInt.fetchAndApply(x -> x + 1)))
                 .collect(Collectors.toList());
         threads.forEach(Thread::start);
         for (Thread thread : threads) {

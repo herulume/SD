@@ -26,6 +26,7 @@ public class Auction implements Lockable {
 
 
     public Auction(ServerType st, Bid bid, BiFunction<ServerType,Bid,Optional<Integer>> endCallback) {
+        Objects.requireNonNull(endCallback);
         this.serverType = Objects.requireNonNull(st);
 
         this.bids = new PriorityQueue<>(Comparator.reverseOrder());
@@ -34,20 +35,21 @@ public class Auction implements Lockable {
         this.lock = new ReentrantReadWriteLock();
 
         this.callback = scheduler.schedule(() -> {
-            Optional<Integer> id = endCallback.apply(this.serverType, this.highestBid());
             this.lock.writeLock().lock();
+            Optional<Integer> id = endCallback.apply(this.serverType, this.highestBid());
             if (id.isPresent())
-                Objects.requireNonNull(this.bids.poll()).getSession().notifyWon(this.serverType, id.get());
+                Objects.requireNonNull(this.bids.poll()).getSession().notifyAuctionWon(this.serverType, id.get());
             else
-                Objects.requireNonNull(this.bids.poll()).getSession().notifyOutOfStock(this.serverType);
+                Objects.requireNonNull(this.bids.poll()).getSession().notifyAuctionWonButOutOfStock(this.serverType);
             while (!this.bids.isEmpty()) {
-                this.bids.poll().getSession().notifyLost(this.serverType);
+                this.bids.poll().getSession().notifyAuctionLost(this.serverType);
             }
             this.lock.writeLock().unlock();
         }, 10, TimeUnit.SECONDS);
     }
 
     void bid(Bid bid) {
+        Objects.requireNonNull(bid);
         this.lock.writeLock().lock();
         this.bids.add(bid);
         this.lock.writeLock().unlock();

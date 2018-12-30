@@ -24,7 +24,7 @@ public class AtomicInt {
         return old;
     }
 
-    public synchronized int fetchOp(Function<Integer, Integer> op) {
+    public synchronized int fetchAndApply(Function<Integer, Integer> op) {
         int old = this.value;
         this.value = op.apply(this.value);
         return old;

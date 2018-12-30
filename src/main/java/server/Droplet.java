@@ -14,16 +14,16 @@ public class Droplet {
     private static AtomicInt idN = new AtomicInt(0);
 
     Droplet(User owner, ServerType serverType) {
-        this.id = Droplet.idN.fetchOp(x -> x + 1);
+        this.id = Droplet.idN.fetchAndApply(x -> x + 1);
         this.owner = Objects.requireNonNull(owner);
         this.serverType = Objects.requireNonNull(serverType);
         this.cost = serverType.cost();
     }
 
     Droplet(User owner, ServerType serverType, float cost) {
-        this.id = Droplet.idN.fetchOp(x -> x + 1);
-        this.owner = owner;
-        this.serverType = serverType;
+        this.id = Droplet.idN.fetchAndApply(x -> x + 1);
+        this.owner = Objects.requireNonNull(owner);
+        this.serverType = Objects.requireNonNull(serverType);
         this.cost = cost;
     }
 
