@@ -5,17 +5,21 @@ import util.Pair;
 import util.ThreadSafeMap;
 import util.ThreadSafeMutMap;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
 public class AuctionHouse {
-    private Map<String, User> users;
-    private ThreadSafeMap<String, Float> debtDeadServers;
-    private ThreadSafeMutMap<ServerType, Auction> auctions;
-    private Map<Integer, Droplet> reservedD;
-    private ThreadSafeMutMap<Integer, Auction> reservedA;
-    private ThreadSafeMap<ServerType, Integer> stock;
+
+    private ThreadSafeMap<String,User> users;
+    private ThreadSafeMap<String,Float> debtDeadServers;
+    private ThreadSafeMutMap<ServerType,Auction> auctions;
+    private ThreadSafeMap<Integer,Droplet> reservedD;
+    private ThreadSafeMap<Integer,Droplet> reservedA;
+    private ThreadSafeMap<ServerType,Integer> stock;
 
     private static final int initialStock = 20;
 
@@ -24,7 +28,7 @@ public class AuctionHouse {
         this.debtDeadServers = new ThreadSafeMap<>();
         this.auctions = new ThreadSafeMutMap<>();
         this.reservedD = new ThreadSafeMap<>();
-        this.reservedA = new ThreadSafeMutMap<>();
+        this.reservedA = new ThreadSafeMap<>();
         this.stock = new ThreadSafeMap<>();
 
         Arrays.stream(ServerType.values()).forEach(st -> this.stock.put(st, AuctionHouse.initialStock));
@@ -49,69 +53,51 @@ public class AuctionHouse {
         return user;
     }
 
-    public Pair<List<Auction>, List<Droplet>> listOwnedServers(String email) {
-        List<Droplet> droplets = this.reservedD.values().stream()
-                .filter(d -> email.equals(d.getOwner().getEmail()))
-                .collect(Collectors.toList());
-
-        List<Auction> auctions = new LinkedList<>();
-        for (Auction a : this.reservedA.valuesLocked()) {
-            if (email.equals(a.highestBidder().getEmail())) {
-                auctions.add((Auction) a.clone());
-            }
-            a.unlock();
-        }
-
-        return Pair.of(auctions, droplets);
+    public Pair<List<Droplet>,List<Droplet>> listOwnedServers(String email) {
+        return Pair.of(
+                this.reservedD.values().stream()
+                        .filter(d -> email.equals(d.getOwner().getEmail()))
+                        .collect(Collectors.toList()),
+                this.reservedA.values().stream()
+                        .filter(d -> email.equals(d.getOwner().getEmail()))
+                        .collect(Collectors.toList())
+        );
     }
 
     public int dropServer(int serverID, User user) throws ServerNotFoundException, ServerPermissionException {
-        Auction a = this.reservedA.getLocked(serverID);
-        if (a != null) {
-            try {
-                if (!(a.highestBidder().equals(user))) {
-                    throw new ServerPermissionException("That server doesn't belong to you");
-                } else {
-                    this.stock.lock();
-                    this.debtDeadServers.lock();
-                    this.reservedA.remove(serverID);
-
-                    float newCost = this.debtDeadServers.get(user.getEmail()) + a.cost();
-                    this.debtDeadServers.put(user.getEmail(), newCost);
-                    int newStock = this.stock.get(a.getType()) + 1;
-                    this.stock.put(a.getType(), newStock);
-
-                    this.stock.unlock();
-                    this.debtDeadServers.unlock();
-                    return a.getId();
-                }
-            } finally {
-                a.unlock();
-            }
-        }
-
+        this.reservedD.lock();
+        this.reservedA.lock();
+        ThreadSafeMap<Integer,Droplet> target;
         if (this.reservedD.containsKey(serverID)) {
-            Droplet d = this.reservedD.remove(serverID);
-            if (!(d.getOwner().equals(user))) {
-                throw new ServerPermissionException("That server doesn't belong to you");
-            } else {
-                this.stock.lock();
-                this.debtDeadServers.lock();
-                this.reservedD.remove(serverID);
-
-                float newCost = this.debtDeadServers.get(user.getEmail()) + d.cost();
-                this.debtDeadServers.put(user.getEmail(), newCost);
-
-                int newStock = this.stock.get(d.getItem()) + 1;
-                this.stock.put(d.getItem(), newStock);
-
-                this.debtDeadServers.lock();
-                this.stock.unlock();
-                return d.getId();
-            }
+            this.reservedA.unlock();
+            target = this.reservedD;
+        } else if (this.reservedA.containsKey(serverID)) {
+            this.reservedD.unlock();
+            target = this.reservedA;
+        } else {
+            this.reservedD.unlock();
+            this.reservedA.unlock();
+            throw new ServerNotFoundException("No server with that id found");
         }
+        Droplet toRemove = target.get(serverID);
+        if (toRemove.getOwner().equals(user)) {
+            this.stock.lock();
+            this.debtDeadServers.lock();
+            target.remove(serverID);
 
-        throw new ServerNotFoundException("No server with that id found");
+            float newCost = this.debtDeadServers.get(user.getEmail()) + toRemove.getCost();
+            this.debtDeadServers.put(user.getEmail(), newCost);
+            int newStock = this.stock.get(toRemove.getServerType()) + 1;
+            this.stock.put(toRemove.getServerType(), newStock);
+
+            this.stock.unlock();
+            this.debtDeadServers.unlock();
+            target.unlock();
+            return toRemove.getId();
+        } else {
+            target.unlock();
+            throw new ServerPermissionException("That server doesn't belong to you");
+        }
     }
 
     public List<Pair<ServerType, Integer>> listAvailableServers() {
@@ -140,53 +126,40 @@ public class AuctionHouse {
         }
     }
 
-    public List<Auction> listRunningAuctions() {
-        List<Auction> auctionsL = new LinkedList<>();
-        for (Auction a : this.auctions.valuesLocked()) {
-            auctionsL.add((Auction) a.clone());
+    public List<Auction.AuctionView> listRunningAuctions() {
+        List<Auction.AuctionView> auctionsL = new LinkedList<>();
+        for(Auction a : this.auctions.valuesLocked()) {
+            auctionsL.add(a.getView());
             a.unlock();
         }
         return auctionsL;
     }
 
-    public int startAuction(ServerType st, Bid bid) throws AuctionOfTypeRunningException {
-        Objects.requireNonNull(st);
-        Objects.requireNonNull(bid);
-
-        if (this.auctions.containsKey(st)) {
-            throw new AuctionOfTypeRunningException("An auction of that type is already running");
+    public void auction(ServerType st, Bid bid) {
+        Auction auction = this.auctions.getLocked(st);
+        if (auction == null) {
+            auction = new Auction(st, bid, this::reserveAuctioned);
+            assert null == auctions.putLocked(st, auction);
         } else {
-            Auction auction = new Auction(st, bid);
-            int auctionId = auction.getId();
-            auctions.putLocked(st, auction);
-            return auctionId;
+            auction.bid(bid);
+            auction.unlock();
         }
     }
 
-    public void bid(int aucID, Bid bid) throws LowerBidException, InvalidAuctionException, NoRunningAuctionsException {
-        Objects.requireNonNull(bid);
-
-        Collection<Auction> aucs = this.auctions.valuesLocked();
-        if (aucs.isEmpty()) {
-            throw new NoRunningAuctionsException("No auctions running");
-        } else {
-            Auction auc = null;
-            for (Auction a : aucs) {
-                if (aucID == a.getId()) {
-                    auc = a;
-                } else {
-                    a.unlock();
-                }
-            }
-            if (auc == null) {
-                throw new InvalidAuctionException("No auction with that id running");
+    private Optional<Integer> reserveAuctioned(ServerType st, Bid bid) {
+        this.auctions.remove(st);
+        this.stock.lock();
+        try {
+            if (this.stock.get(st) == 0) {
+                return Optional.empty();
             } else {
-                try {
-                    auc.bid(bid);
-                } finally {
-                    auc.unlock();
-                }
+                Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
+                this.reservedA.put(d.getId(), d);
+                this.stock.put(st, this.stock.get(st) - 1);
+                return Optional.of(d.getId());
             }
+        } finally {
+            this.stock.unlock();
         }
     }
 }

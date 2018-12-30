@@ -1,71 +1,76 @@
 package server;
 
-import server.exception.LowerBidException;
+import server.middleware.Session;
 import util.Lockable;
 
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiFunction;
 
 public class Auction implements Lockable {
-    private final int id;
-    private final ServerType item;
-    private Bid highestBid;
+
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    private final ServerType serverType;
+    private final PriorityQueue<Bid> bids;
+    private final ScheduledFuture<?> callback;
 
     private ReadWriteLock lock;
 
-    private static int idN = 0;
 
-    public Auction(ServerType st, Bid bid) {
-        this.item = Objects.requireNonNull(st);
-        this.id = idN;
-        this.highestBid = Objects.requireNonNull(bid);
+    public Auction(ServerType st, Bid bid, BiFunction<ServerType,Bid,Optional<Integer>> endCallback) {
+        this.serverType = Objects.requireNonNull(st);
+
+        this.bids = new PriorityQueue<>(Comparator.reverseOrder());
+        this.bids.add(Objects.requireNonNull(bid));
+
         this.lock = new ReentrantReadWriteLock();
 
-        Auction.idN++;
+        this.callback = scheduler.schedule(() -> {
+            Optional<Integer> id = endCallback.apply(this.serverType, this.highestBid());
+            this.lock.writeLock().lock();
+            if (id.isPresent())
+                Objects.requireNonNull(this.bids.poll()).getSession().notifyWon(this.serverType, id.get());
+            else
+                Objects.requireNonNull(this.bids.poll()).getSession().notifyOutOfStock(this.serverType);
+            while(!this.bids.isEmpty()) {
+                this.bids.poll().getSession().notifyLost(this.serverType);
+            }
+            this.lock.writeLock().unlock();
+        }, 10, TimeUnit.SECONDS);
     }
 
-    public void bid(Bid bid) throws LowerBidException {
+    void bid(Bid bid) {
+        this.lock.writeLock().lock();
+        this.bids.add(bid);
+        this.lock.writeLock().unlock();
+    }
+
+    private Bid highestBid() {
+        this.lock.writeLock().lock();
         try {
-            this.lock.writeLock().lock();
-            Objects.requireNonNull(bid);
-            if (bid.value() <= this.highestBid.value())
-                throw new LowerBidException("Bid value lower than current bid");
-            this.highestBid = bid;
+            assert this.bids.peek() != null;
+            return this.bids.peek();
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
-    public int getId() {
-        return this.id;
-    }
-
-    public ServerType getType() {
-        return this.item;
-    }
-
-    public float highestBid() {
+    boolean hasSession(Session s) {
         try {
             this.lock.readLock().lock();
-            return this.highestBid.value();
+            return this.bids.stream().anyMatch(b -> b.getSession() == s /*using == on purpose*/);
         } finally {
             this.lock.readLock().unlock();
         }
-    }
-
-    public User highestBidder() {
-        try {
-            this.lock.readLock().lock();
-            return this.highestBid.buyer();
-        } finally {
-            this.lock.readLock().unlock();
-        }
-    }
-
-    // TODO Implement this after putting the timer
-    public float cost() {
-        return this.highestBid();
     }
 
     @Override
@@ -78,39 +83,31 @@ public class Auction implements Lockable {
         this.lock.writeLock().unlock();
     }
 
-    public Object clone() {
+    public AuctionView getView() {
+        this.lock.readLock().lock();
         try {
-            this.lock.readLock().lock();
-            Auction copy = new Auction(this.id, this.item);
-            copy.highestBid = this.highestBid;
-            return copy;
+            assert this.bids.peek() != null;
+            return new AuctionView(this.bids.peek().getValue(), this.callback.getDelay(TimeUnit.SECONDS), this.serverType);
         } finally {
             this.lock.readLock().unlock();
         }
     }
 
-    private Auction(int id, ServerType st) {
-        this.item = st;
-        this.id = id;
-        this.lock = new ReentrantReadWriteLock();
-    }
+    public class AuctionView {
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Auction auction = (Auction) o;
-        return id == auction.id;
-    }
+        private final float highestBid;
+        private final long timeLeft;
+        private final ServerType serverType;
 
-    @Override
-    public String toString(){
-        return this.id + "\t" + this.item.getName() + "\t" + highestBid.value();
-    }
+        private AuctionView(float highestBid, long timeLeft, ServerType serverType) {
+            this.highestBid = highestBid;
+            this.timeLeft = timeLeft;
+            this.serverType = serverType;
+        }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+        @Override
+        public String toString() {
+            return this.serverType + "\t" + this.highestBid + "\t" + this.timeLeft;
+        }
     }
-
 }
