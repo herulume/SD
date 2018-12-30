@@ -17,7 +17,7 @@ public class Droplet {
         this.id = Droplet.idN.fetchAndApply(x -> x + 1);
         this.owner = Objects.requireNonNull(owner);
         this.serverType = Objects.requireNonNull(serverType);
-        this.cost = serverType.cost();
+        this.cost = serverType.getPrice();
     }
 
     Droplet(User owner, ServerType serverType, float cost) {
@@ -53,7 +53,7 @@ public class Droplet {
 
     @Override
     public String toString() {
-        return this.id + " \t " + this.serverType.getName();
+        return this.id + "\t" + this.serverType.getName() + "\t" + this.cost;
     }
 
     @Override

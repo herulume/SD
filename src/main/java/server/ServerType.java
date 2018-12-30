@@ -5,16 +5,16 @@ import java.util.Optional;
 public enum ServerType {
     I(12.3f, "ts1.lower"), B(203.3f, "ts2.high");
 
-    private final float cost;
+    private final float price;
     private final String name;
 
-    ServerType(float cost, String name) {
-        this.cost = cost;
+    ServerType(float price, String name) {
+        this.price = price;
         this.name = name;
     }
 
-    public float cost() {
-        return this.cost;
+    public float getPrice() {
+        return this.price;
     }
 
     public String getName() {

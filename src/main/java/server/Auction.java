@@ -45,7 +45,7 @@ public class Auction implements Lockable {
                 this.bids.poll().getSession().notifyAuctionLost(this.serverType);
             }
             this.lock.writeLock().unlock();
-        }, 10, TimeUnit.SECONDS);
+        }, 40, TimeUnit.SECONDS);
     }
 
     void bid(Bid bid) {
@@ -108,7 +108,7 @@ public class Auction implements Lockable {
 
         @Override
         public String toString() {
-            return this.serverType + "\t" + this.highestBid + "\t" + this.timeLeft;
+            return this.serverType + "\t" + this.highestBid + "\t\t" + this.timeLeft;
         }
     }
 }

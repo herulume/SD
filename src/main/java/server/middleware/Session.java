@@ -115,42 +115,42 @@ public class Session implements Runnable {
     private String ls(List<String> command){
         if(this.user == null) return Session.LOGIN_REQUIRED;
         if(command.size() == 0){
-            return "NAME\t\tAMOUNT IN STOCK\n" +
+            return "NAME\t\tPRICE\tAMOUNT IN STOCK\n" +
                     this.auctionHouse.listAvailableServers()
                             .stream()
-                            .map(x -> x.getFirst().getName() + "\t" + x.getSecond())
+                            .map(x -> x.getFirst().getName() + "\t" + x.getFirst().getPrice() + "\t" + x.getSecond())
                             .sorted()
                             .reduce("", (x, y) -> x + "\n" + y);
         }
         if(command.get(0).equals("-m")){
+            final String dropletHeader = "\nID\tNAME\t\tPRICE PAID\n==================================\n";
             Function<List<Droplet>,String> stringify = x -> x.stream().map(Droplet::toString).sorted().collect(Collectors.joining("\n"));
             Pair<String,String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
                     .mapFirst(stringify)
                     .mapSecond(stringify);
-            StringBuilder result = new StringBuilder("DROPLETS:\n");
+            StringBuilder result = new StringBuilder("DROPLETS:");
             if(possessions.getFirst().isEmpty()){
-                result.append("You have no droplets\n");
+                result.append(" You have no droplets\n");
             }else{
-                result.append("ID\tNAME\n=======================\n")
-                        .append(possessions.getFirst())
-                        .append("\n");
+                result.append(dropletHeader).append(possessions.getFirst()).append("\n");
             }
-            result.append("AUCTIONED DROPLETS:\n");
+            result.append("AUCTIONED DROPLETS:");
             if(possessions.getSecond().isEmpty()){
-                result.append("You have no auctioned droplets\n");
+                result.append(" You have no auctioned droplets\n");
             }else{
-                result.append("\nID\tNAME\tPRICE PAID\n=======================\n")
-                        .append(possessions.getSecond())
-                        .append("\n");
+                result.append(dropletHeader).append(possessions.getSecond()).append("\n");
             }
             return result.toString();
         }
         if(command.get(0).equals("-a")){
-            return "\nNAME\tHIGHEST BID\tTIME LEFT\n=======================\n" +
-                    this.auctionHouse.listRunningAuctions()
+            String auctions = this.auctionHouse.listRunningAuctions()
                             .stream()
                             .map(Auction.View::toString)
                             .reduce("", (x, y) -> x + "\n" + y);
+            if (auctions.isEmpty())
+                return "No auctions running";
+            else
+                return "\nNAME\tHIGHEST BID\tTIME LEFT\n=================================\n" + auctions;
         }
         return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions";
     }
