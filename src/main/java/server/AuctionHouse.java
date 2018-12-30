@@ -139,7 +139,8 @@ public class AuctionHouse {
         Auction auction = this.auctions.getLocked(st);
         if (auction == null) {
             auction = new Auction(st, bid, this::reserveAuctioned);
-            assert null == auctions.putLocked(st, auction);
+            Auction shouldBeNull = auctions.putLocked(st, auction);
+            assert shouldBeNull == null;
         } else {
             auction.bid(bid);
             auction.unlock();
