@@ -34,15 +34,11 @@ public class ThreadSafeMutMap<K, V extends Lockable> extends ThreadSafeMap<K,V> 
 
     public V putLocked(K k, V v){
         this.lock.writeLock().lock();
-        if(this.map.containsKey(k)){
-            this.map.get(k).lock();
-            V r = this.map.put(k, v);
+        try{
+            if(this.map.containsKey(k)) this.map.get(k).lock();
+            return this.map.put(k, v);
+        }finally {
             this.lock.writeLock().unlock();
-            return r;
-        }else{
-            this.map.put(k, v);
-            this.lock.writeLock().unlock();
-            return null;
         }
     }
 

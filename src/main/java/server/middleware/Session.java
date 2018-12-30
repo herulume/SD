@@ -118,14 +118,14 @@ public class Session implements Runnable {
                     this.auctionHouse.listAvailableServers()
                             .stream()
                             .map(x -> x.getFirst().getName() + "\t" + x.getSecond())
+                            .sorted()
                             .reduce("", (x, y) -> x + "\n" + y);
         }
         if(command.get(0).equals("-m")){
-            Function<List<Droplet>,String> stringify = x -> x.stream().map(Droplet::toString).collect(Collectors.joining("\n"));
+            Function<List<Droplet>,String> stringify = x -> x.stream().map(Droplet::toString).sorted().collect(Collectors.joining("\n"));
             Pair<String,String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
                     .mapFirst(stringify)
-                    .mapSecond(stringify)
-                    .swap();
+                    .mapSecond(stringify);
             StringBuilder result = new StringBuilder("DROPLETS:\n");
             if(possessions.getFirst().isEmpty()){
                 result.append("You have no droplets\n");
@@ -212,14 +212,17 @@ public class Session implements Runnable {
 
     public void notifyWon(ServerType serverType, int dropletId) { //TODO
         this.auctioning = false;
+        System.out.println("User: " + this.user + " won " + serverType + " @ " + dropletId);
     }
 
     public void notifyOutOfStock(ServerType serverType) { //TODO
         this.auctioning = false;
+        System.out.println("User " + this.user + " won " + serverType + " but it's out of stock");
     }
 
     public void notifyLost(ServerType serverType) { //TODO
         this.auctioning = false;
+        System.out.println("User " + this.user + " lost " + serverType);
     }
 }
 

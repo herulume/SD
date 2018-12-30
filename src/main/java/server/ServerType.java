@@ -22,7 +22,7 @@ public enum ServerType {
     }
 
     public static Optional<ServerType> fromString(String st) {
-        switch (st.toUpperCase()) {
+        switch (st.toLowerCase()) {
             case "ts1.lower":
                 return Optional.of(ServerType.I);
             case "ts2.high":
