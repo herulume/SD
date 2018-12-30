@@ -22,8 +22,7 @@ public class Auction implements Lockable {
     private final ServerType serverType;
     private final PriorityQueue<Bid> bids;
     private final ScheduledFuture<?> callback;
-
-    private ReadWriteLock lock;
+    private final ReadWriteLock lock;
 
 
     public Auction(ServerType st, Bid bid, BiFunction<ServerType,Bid,Optional<Integer>> endCallback) {
@@ -83,7 +82,7 @@ public class Auction implements Lockable {
         this.lock.writeLock().unlock();
     }
 
-    public View getView() {
+    View getView() {
         this.lock.readLock().lock();
         try {
             assert this.bids.peek() != null;
