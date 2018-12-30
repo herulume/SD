@@ -14,12 +14,12 @@ import java.util.stream.Collectors;
 
 public class AuctionHouse {
 
-    private ThreadSafeMap<String,User> users;
-    private ThreadSafeMap<String,Float> debtDeadServers;
-    private ThreadSafeMutMap<ServerType,Auction> auctions;
-    private ThreadSafeMap<Integer,Droplet> reservedD;
-    private ThreadSafeMap<Integer,Droplet> reservedA;
-    private ThreadSafeMap<ServerType,Integer> stock;
+    private ThreadSafeMap<String, User> users;
+    private ThreadSafeMap<String, Float> debtDeadServers;
+    private ThreadSafeMutMap<ServerType, Auction> auctions;
+    private ThreadSafeMap<Integer, Droplet> reservedD;
+    private ThreadSafeMap<Integer, Droplet> reservedA;
+    private ThreadSafeMap<ServerType, Integer> stock;
 
     private static final int initialStock = 20;
 
@@ -53,7 +53,7 @@ public class AuctionHouse {
         return user;
     }
 
-    public Pair<List<Droplet>,List<Droplet>> listOwnedServers(String email) {
+    public Pair<List<Droplet>, List<Droplet>> listOwnedServers(String email) {
         return Pair.of(
                 this.reservedD.values().stream()
                         .filter(d -> email.equals(d.getOwner().getEmail()))
@@ -67,7 +67,7 @@ public class AuctionHouse {
     public int dropServer(int serverID, User user) throws ServerNotFoundException, ServerPermissionException {
         this.reservedD.lock();
         this.reservedA.lock();
-        ThreadSafeMap<Integer,Droplet> target;
+        ThreadSafeMap<Integer, Droplet> target;
         if (this.reservedD.containsKey(serverID)) {
             this.reservedA.unlock();
             target = this.reservedD;
@@ -128,7 +128,7 @@ public class AuctionHouse {
 
     public List<Auction.AuctionView> listRunningAuctions() {
         List<Auction.AuctionView> auctionsL = new LinkedList<>();
-        for(Auction a : this.auctions.valuesLocked()) {
+        for (Auction a : this.auctions.valuesLocked()) {
             auctionsL.add(a.getView());
             a.unlock();
         }

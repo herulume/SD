@@ -5,6 +5,7 @@ import util.AtomicInt;
 import java.util.Objects;
 
 public class Droplet {
+
     private final int id;
     private final User owner;
     private final ServerType serverType;
@@ -51,7 +52,7 @@ public class Droplet {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return this.id + " \t " + this.serverType.getName();
     }
 

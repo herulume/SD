@@ -41,7 +41,7 @@ public class Auction implements Lockable {
                 Objects.requireNonNull(this.bids.poll()).getSession().notifyWon(this.serverType, id.get());
             else
                 Objects.requireNonNull(this.bids.poll()).getSession().notifyOutOfStock(this.serverType);
-            while(!this.bids.isEmpty()) {
+            while (!this.bids.isEmpty()) {
                 this.bids.poll().getSession().notifyLost(this.serverType);
             }
             this.lock.writeLock().unlock();
