@@ -148,7 +148,7 @@ public class Session implements Runnable {
             return "\nNAME\tHIGHEST BID\tTIME LEFT\n=======================\n" +
                     this.auctionHouse.listRunningAuctions()
                             .stream()
-                            .map(Auction.AuctionView::toString)
+                            .map(Auction.View::toString)
                             .reduce("", (x, y) -> x + "\n" + y);
         }
         return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions";

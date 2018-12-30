@@ -83,23 +83,23 @@ public class Auction implements Lockable {
         this.lock.writeLock().unlock();
     }
 
-    public AuctionView getView() {
+    public View getView() {
         this.lock.readLock().lock();
         try {
             assert this.bids.peek() != null;
-            return new AuctionView(this.bids.peek().getValue(), this.callback.getDelay(TimeUnit.SECONDS), this.serverType);
+            return new View(this.bids.peek().getValue(), this.callback.getDelay(TimeUnit.SECONDS), this.serverType);
         } finally {
             this.lock.readLock().unlock();
         }
     }
 
-    public class AuctionView {
+    public class View {
 
         private final float highestBid;
         private final long timeLeft;
         private final ServerType serverType;
 
-        private AuctionView(float highestBid, long timeLeft, ServerType serverType) {
+        private View(float highestBid, long timeLeft, ServerType serverType) {
             this.highestBid = highestBid;
             this.timeLeft = timeLeft;
             this.serverType = serverType;

@@ -126,8 +126,8 @@ public class AuctionHouse {
         }
     }
 
-    public List<Auction.AuctionView> listRunningAuctions() {
-        List<Auction.AuctionView> auctionsL = new LinkedList<>();
+    public List<Auction.View> listRunningAuctions() {
+        List<Auction.View> auctionsL = new LinkedList<>();
         for (Auction a : this.auctions.valuesLocked()) {
             auctionsL.add(a.getView());
             a.unlock();
