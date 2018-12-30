@@ -135,15 +135,20 @@ public class AuctionHouse {
         return auctionsL;
     }
 
-    public void auction(ServerType st, Bid bid) {
-        Auction auction = this.auctions.getLocked(st);
-        if (auction == null) {
-            auction = new Auction(st, bid, this::reserveAuctioned);
-            Auction shouldBeNull = auctions.putLocked(st, auction);
-            assert shouldBeNull == null;
-        } else {
-            auction.bid(bid);
-            auction.unlock();
+    public void auction(ServerType st, Bid bid) { //TODO reduce critical zone
+        this.auctions.lock();
+        try{
+            Auction auction = this.auctions.getLocked(st);
+            if (auction == null) {
+                auction = new Auction(st, bid, this::reserveAuctioned);
+                Auction shouldBeNull = auctions.putLocked(st, auction);
+                assert shouldBeNull == null;
+            } else {
+                auction.bid(bid);
+                auction.unlock();
+            }
+        } finally {
+            this.auctions.unlock();
         }
     }
 

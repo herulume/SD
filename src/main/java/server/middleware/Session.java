@@ -145,7 +145,7 @@ public class Session implements Runnable {
             return result.toString();
         }
         if(command.get(0).equals("-a")){
-            return "\nID\tNAME\tHIGHEST BID\n=======================\n" +
+            return "\nNAME\tHIGHEST BID\tTIME LEFT\n=======================\n" +
                     this.auctionHouse.listRunningAuctions()
                             .stream()
                             .map(Auction.AuctionView::toString)
