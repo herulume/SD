@@ -1,20 +1,30 @@
 package server;
 
+import util.AtomicInt;
+
 import java.util.Objects;
 
 public class Droplet {
+
     private final int id;
     private final User owner;
-    private final ServerType item;
+    private final ServerType serverType;
+    private final float cost;
 
-    private static int idN = 0;
+    private static AtomicInt idN = new AtomicInt(0);
 
-    Droplet(User owner, ServerType item) {
-        this.id = idN;
+    Droplet(User owner, ServerType serverType) {
+        this.id = Droplet.idN.fetchAndApply(x -> x + 1);
         this.owner = Objects.requireNonNull(owner);
-        this.item = Objects.requireNonNull(item);
+        this.serverType = Objects.requireNonNull(serverType);
+        this.cost = serverType.getPrice();
+    }
 
-        Droplet.idN++;
+    Droplet(User owner, ServerType serverType, float cost) {
+        this.id = Droplet.idN.fetchAndApply(x -> x + 1);
+        this.owner = Objects.requireNonNull(owner);
+        this.serverType = Objects.requireNonNull(serverType);
+        this.cost = cost;
     }
 
     int getId() {
@@ -25,13 +35,12 @@ public class Droplet {
         return this.owner;
     }
 
-    ServerType getItem() {
-        return this.item;
+    ServerType getServerType() {
+        return this.serverType;
     }
 
-    // TODO Implement this after putting the timer
-    float cost() {
-        return this.item.cost();
+    float getCost() {
+        return this.cost;
     }
 
     @Override
@@ -43,8 +52,8 @@ public class Droplet {
     }
 
     @Override
-    public String toString(){
-        return this.id + " \t " + this.item.getName();
+    public String toString() {
+        return this.id + "\t" + this.serverType.getName() + "\t" + this.cost;
     }
 
     @Override

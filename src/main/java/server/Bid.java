@@ -1,21 +1,33 @@
 package server;
 
-import java.util.Objects;
+import server.middleware.Session;
 
-public class Bid {
-    private final User buyer;
+public class Bid implements Comparable<Bid> {
+
+    private final Session session;
     private final float value;
+    private final User bidder;
 
-    public Bid(User buyer, float value) {
-        this.buyer = Objects.requireNonNull(buyer);
+    public Bid(Session session, float value, User bidder) {
+        this.session = session;
         this.value = value;
+        this.bidder = bidder;
     }
 
-    User buyer() {
-        return this.buyer;
-    }
-
-    float value() {
+    float getValue() {
         return this.value;
+    }
+
+    Session getSession() {
+        return this.session;
+    }
+
+    User getBidder() {
+        return this.bidder;
+    }
+
+    @Override
+    public int compareTo(Bid bid) {
+        return Float.compare(this.value, bid.value);
     }
 }
