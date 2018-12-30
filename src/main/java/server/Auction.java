@@ -1,5 +1,6 @@
 package server;
 
+import server.exception.BidTooLowException;
 import server.middleware.Session;
 import util.Lockable;
 
@@ -48,11 +49,16 @@ public class Auction implements Lockable {
         }, 40, TimeUnit.SECONDS);
     }
 
-    void bid(Bid bid) {
+    void bid(Bid bid) throws BidTooLowException {
         Objects.requireNonNull(bid);
         this.lock.writeLock().lock();
-        this.bids.add(bid);
-        this.lock.writeLock().unlock();
+        try {
+            if (this.highestBid().getValue() >= bid.getValue())
+                throw new BidTooLowException("Please bid higher then the current highest bid: " + highestBid().getValue());
+            this.bids.add(bid);
+        } finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
     private Bid highestBid() {
@@ -108,7 +114,7 @@ public class Auction implements Lockable {
 
         @Override
         public String toString() {
-            return this.serverType + "\t" + this.highestBid + "\t\t" + this.timeLeft;
+            return this.serverType.getName() + "\t" + this.highestBid + "\t\t" + this.timeLeft;
         }
     }
 }

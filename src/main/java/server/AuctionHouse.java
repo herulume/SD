@@ -5,10 +5,7 @@ import util.Pair;
 import util.ThreadSafeMap;
 import util.ThreadSafeMutMap;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -135,7 +132,9 @@ public class AuctionHouse {
         return auctionsL;
     }
 
-    public void auction(ServerType st, Bid bid) {
+    public void auction(ServerType st, Bid bid) throws BidTooLowException {
+        Objects.requireNonNull(st);
+        Objects.requireNonNull(bid);
         this.auctions.lock();
         Auction auction = this.auctions.getLocked(st);
         if (auction == null) {
@@ -145,8 +144,11 @@ public class AuctionHouse {
             assert shouldBeNull == null;
         } else {
             this.auctions.unlock();
-            auction.bid(bid);
-            auction.unlock();
+            try {
+                auction.bid(bid);
+            } finally {
+                auction.unlock();
+            }
         }
     }
 

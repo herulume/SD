@@ -150,7 +150,7 @@ public class Session implements Runnable {
             if (auctions.isEmpty())
                 return "No auctions running";
             else
-                return "\nNAME\tHIGHEST BID\tTIME LEFT\n=================================\n" + auctions;
+                return "\nNAME\t\tHIGHEST BID\tTIME LEFT\n=========================================\n" + auctions;
         }
         return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions";
     }
@@ -204,6 +204,8 @@ public class Session implements Runnable {
             }
         }catch(NumberFormatException e){
             return "Invalid amount: " + command.get(0);
+        } catch (BidTooLowException e) {
+            return e.getMessage();
         }
     }
 
