@@ -102,6 +102,7 @@ public class Session implements Runnable {
     }
 
     private String login(List<String> command){
+        if(this.user != null) return "You are already logged in!";
         if(command.size() < 2) return "Usage: login <email> <password>";
         try{
             this.user = this.auctionHouse.login(command.get(0), command.get(1));
