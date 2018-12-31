@@ -2,6 +2,8 @@ package server;
 
 import util.AtomicInt;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 public class Droplet {
@@ -10,6 +12,7 @@ public class Droplet {
     private final User owner;
     private final ServerType serverType;
     private final float cost;
+    private final LocalDateTime timestamp;
 
     private static AtomicInt idN = new AtomicInt(0);
 
@@ -18,6 +21,7 @@ public class Droplet {
         this.owner = Objects.requireNonNull(owner);
         this.serverType = Objects.requireNonNull(serverType);
         this.cost = serverType.getPrice();
+        this.timestamp = LocalDateTime.now();
     }
 
     Droplet(User owner, ServerType serverType, float cost) {
@@ -25,6 +29,7 @@ public class Droplet {
         this.owner = Objects.requireNonNull(owner);
         this.serverType = Objects.requireNonNull(serverType);
         this.cost = cost;
+        this.timestamp = LocalDateTime.now();
     }
 
     int getId() {
@@ -43,6 +48,10 @@ public class Droplet {
         return this.cost;
     }
 
+    float getDebt() {
+        return this.cost * (this.timestamp.until(LocalDateTime.now(), ChronoUnit.SECONDS) / (3600.0f));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -53,7 +62,7 @@ public class Droplet {
 
     @Override
     public String toString() {
-        return this.id + "\t" + this.serverType.getName() + "\t" + this.cost;
+        return this.id + "\t" + this.serverType.getName() + "\t" + String.format("%.2f", this.getDebt());
     }
 
     @Override

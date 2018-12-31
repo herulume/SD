@@ -123,7 +123,7 @@ public class Session implements Runnable {
                             .reduce("", (x, y) -> x + "\n" + y);
         }
         if(command.get(0).equals("-m")){
-            final String dropletHeader = "\nID\tNAME\t\tPRICE PAID\n==================================\n";
+            final String dropletHeader = "\nID\tNAME\t\tDEBT OWED SO FAR\n==================================\n";
             Function<List<Droplet>,String> stringify = x -> x.stream().map(Droplet::toString).sorted().collect(Collectors.joining("\n"));
             Pair<String,String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
                     .mapFirst(stringify)
@@ -172,7 +172,10 @@ public class Session implements Runnable {
     }
 
     private String profile(){
-        return this.user.toString();
+        Pair<Float, Float> debt = this.auctionHouse.getDebt(this.user);
+        return this.user.toString() + "\n"
+                + "Dropped server debt: " + String.format("%.2f",debt.getFirst()) + "\n"
+                + "Running server debt: " + String.format("%.2f", debt.getSecond());
     }
 
     private String dropServer(List<String> command){
