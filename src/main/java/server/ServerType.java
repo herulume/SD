@@ -31,4 +31,9 @@ public enum ServerType {
                 return Optional.empty();
         }
     }
+
+    @Override
+    public String toString() {
+        return this.getName();
+    }
 }
