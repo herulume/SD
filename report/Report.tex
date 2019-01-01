@@ -8,12 +8,10 @@
 \usepackage{float}
 \usepackage{indentfirst}
 \usepackage{subcaption}
+\usepackage[cache=false]{minted}
 
 \begin{document}
 
-\renewcommand\thesection{}
-\renewcommand\thesubsection{}
-\renewcommand\thesubsubsection{}
 
 \title{Sistemas Distribuídos\\ Grupo 16 \\ Alocação de servidores na nuvem}
 \author{Eduardo Barbosa (a83344) \and Bárbara Cardoso (a80453) \and Pedro Mendes (a79003)}
@@ -53,12 +51,65 @@
 \pagebreak
 \section{Resolução do Problema}
 
+Para a implementação deste sistema foi criada uma classe \texttt{Client}, que funciona de forma muito similar ao comando \texttt{telnet}, para que fosse possível interagir com o servidor.
+
+A lógica do servidor está dividida em 3 \textit{packages}:
+
+\begin{figure}[H]
+    \begin{tabular}{ll}
+        \texttt{server}            & que contem a lógica de negocio.\\
+        \texttt{server/middleware} & que contem a \texttt{Session}.\\
+        \texttt{server/exceptions} & que contem as \textit{exceptions} lançadas pela lógica de negocio.\\
+        \texttt{util}              & que contem classes utilitárias.
+    \end{tabular}
+\end{figure}
+
+\subsection{server.middleware}
+\subsubsection{\texttt{Session}}
+
+% Notes for this section:
+% Session == Controller if considering MVC
+
+\subsection{server}
+
+% Notes for this section:
+% server.* == Model if considering MVC
+
+\subsection{util}
+\subsubsection{\texttt{AtomicInt}}
+
+Esta classe implementa uma versão \textit{thread safe} de um \texttt{Integer} disponibilizando uma API restrita que apenas permite alterações atómicas do seu valor. Esta é útil para garantir que os IDs auto-incrementados dos \texttt{Droplet}s nunca se repetem, caso dois fossem instanciados em simultâneo.
+
+\subsubsection{\texttt{ThreadSafeMap}}
+
+Esta implementação da interface \texttt{Map<K,V>} garante que todas as operações feitas sobre ele são atómicas e sequenciais, utilizando um \textit{Read Write Lock} para que possam haver leituras em simultâneo mas nunca escritas e/ou leituras em simultâneo.
+
+\subsubsection{\texttt{ThreadSafeMutMap}}
+
+Esta extencao do \texttt{ThreadSafeMap} é mais restrita quanto aos objectos que permite guardar, estes tem de implementar a interface \texttt{Lockable} que define objectos com a possibilidade de ser bloqueados por uma \textit{thread}. Esta restrição é necessária para ser possível codificar o seguinte padrão.
+
+\begin{figure}[H]
+    \begin{minted}{java}
+        this.lock.lock();
+        V v = this.map.get(k);
+        v.lock();
+        this.lock.unlock();
+        return v;
+    \end{minted}
+\end{figure}
+
+Assim a API desta estrutura de dados disponibiliza os seguintes métodos para que seja explicito que o objecto retornado esta \textit{locked} e terá de ser \textit{unlocked} para que não sejam criadas situações de \textit{deadlock}.
+
+\begin{itemize}
+    \item \texttt{public V getLocked(K k)}
+    \item \texttt{public Collection<V> getLocked(K k)}
+    \item \texttt{public V putLocked(K k, V v)}
+    \item \texttt{public Collection<V> valuesLocked()}
+    \item \texttt{public Set<Entry<K, V>> entrySetLocked()}
+\end{itemize}
+
 \pagebreak
 \section{Conclusões e Trabalho Futuro}
-
-Este trabalho ajudou a compreender os vários tipos e subtipos de tramas 802.11.
-
-Foi necessário compreender os vários mecanismos de controlo, gestão e transmissão de tramas existentes como por exemplo o scanning passivo e activo e o uso de tramas \textit{RTS} e \textit{CTS} para evitar colisões.
 
 
 \end{document}
