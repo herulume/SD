@@ -82,7 +82,7 @@ public class AuctionHouse {
             this.debtDeadServers.lock();
             target.remove(serverID);
 
-            float newCost = this.debtDeadServers.get(user.getEmail()) + toRemove.getCost();
+            float newCost = this.debtDeadServers.get(user.getEmail()) + toRemove.getDebt();
             this.debtDeadServers.put(user.getEmail(), newCost);
             int newStock = this.stock.get(toRemove.getServerType()) + 1;
             this.stock.put(toRemove.getServerType(), newStock);
@@ -167,5 +167,20 @@ public class AuctionHouse {
         } finally {
             this.stock.unlock();
         }
+    }
+
+    public Pair<Float, Float> getDebt(User user) {
+        Objects.requireNonNull(user);
+        return Pair.of(
+                this.debtDeadServers.get(user.getEmail()),
+                (float) (this.reservedD.values().stream()
+                        .filter(d -> d.getOwner().equals(user))
+                        .mapToDouble(Droplet::getDebt)
+                        .sum()
+                        + this.reservedA.values().stream()
+                        .filter(d -> d.getOwner().equals(user))
+                        .mapToDouble(Droplet::getDebt)
+                        .sum())
+        );
     }
 }
