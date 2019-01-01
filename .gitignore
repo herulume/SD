@@ -36,3 +36,9 @@ build.xml
 classes/
 src/main/resources/
 src/test/resources/
+
+*.log
+*.aux
+*.out
+*.toc
+Report.pdf
