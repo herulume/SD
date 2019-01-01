@@ -4,48 +4,69 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
+import static java.lang.System.err;
 import static java.lang.System.out;
 
 public class Client {
 
-    private static Socket s;
-    private static BufferedReader reader;
-    private static PrintWriter writer;
-    private static Scanner console;
+    private Socket s;
+    private BufferedReader reader;
+    private PrintWriter writer;
+    private Scanner console;
 
     public static void main(String[] args){
         try{
-            s = new Socket("localhost", 5000);
-            reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            writer = new PrintWriter(new OutputStreamWriter(s.getOutputStream()), /*auto flush*/ true);
-            console = new Scanner(System.in);
-            for(; ; ){
-                out.print("§ ");
-                out.flush();
-                String message = console.nextLine().trim();
-                writer.println(message);
-                String serverMessage;
-                do{
-                    serverMessage = reader.readLine();
-                    if(serverMessage == null) return;
-                    if(!serverMessage.isEmpty()) out.println(serverMessage);
-                }while(reader.ready());
-                if(message.equals("quit")) break;
+            new Client("localhost", 5000).run();
+        } catch (IOException e) {
+            err.println(e.getMessage());
+        }
+    }
+
+    private Client(String address, int port) throws IOException {
+        this.s = new Socket(address, port);
+        this.reader = new BufferedReader(new InputStreamReader(this.s.getInputStream()));
+        this.writer = new PrintWriter(new OutputStreamWriter(this.s.getOutputStream()), /*auto flush*/ true);
+        this.console = new Scanner(System.in);
+    }
+
+    private void run() {
+        new Thread(this::inbox).start();
+        try {
+            for (; ; ) {
+//                out.print("§ ");
+//                out.flush();
+                String message = this.console.nextLine().trim();
+                this.writer.println(message);
+                if (message.equals("quit")) break;
             }
-        }catch(IOException e){
-            System.err.println(e.getMessage());
-        }finally{
-            if(console != null)
-                console.close();
-            if(writer != null)
-                writer.close();
-            try{
-                if(reader != null)
-                    reader.close();
-                if(s != null)
-                    s.close();
-            }catch(IOException ignored){
-            }
+        } finally {
+            gracefulShutdown();
+        }
+    }
+
+    private void inbox() {
+        String serverMessage;
+        try {
+            while ((serverMessage = this.reader.readLine()) != null)
+                if (!serverMessage.isEmpty()) out.println(serverMessage);
+        } catch (IOException e) {
+            err.println(e.getMessage());
+        } finally {
+            gracefulShutdown();
+        }
+    }
+
+    private void gracefulShutdown() {
+        if (this.console != null)
+            console.close();
+        if (this.writer != null)
+            this.writer.close();
+        try {
+            if (this.reader != null)
+                this.reader.close();
+            if (this.s != null)
+                this.s.close();
+        } catch (IOException ignored) {
         }
     }
 }
