@@ -108,7 +108,7 @@ public class AuctionHouse {
         this.stock.lock();
         try {
             if (this.stock.get(st) == 0) {
-                throw new DropletOfTypeWithoutStock("No stock for type: " + st.getName());
+                throw new DropletOfTypeWithoutStock("No stock for type: " + st);
             } else {
                 Droplet d = new Droplet(user, st);
                 this.reservedD.put(d.getId(), d);

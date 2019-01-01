@@ -18,9 +18,10 @@ public class Session implements Runnable {
     private static final String LOGIN_REQUIRED = "You must be logged in to use this command";
 
     private User user;
-    private Socket socket;
-    private AuctionHouse auctionHouse;
+    private final Socket socket;
+    private final AuctionHouse auctionHouse;
     private boolean inAuction;
+    private PrintWriter out;
 
     public Session(Socket socket, AuctionHouse auctionHouse){
         this.socket = socket;
@@ -32,10 +33,10 @@ public class Session implements Runnable {
     @Override
     public void run(){
         BufferedReader in = null;
-        PrintWriter out = null;
+        this.out = null;
         try{
             try{
-                out = new PrintWriter(new OutputStreamWriter(this.socket.getOutputStream()),/*auto flush*/true);
+                this.out = new PrintWriter(new OutputStreamWriter(this.socket.getOutputStream()),/*auto flush*/true);
                 in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             }catch(IOException e){
                 System.out.println("Couldn't set up IO: " + e.getMessage());
@@ -47,18 +48,18 @@ public class Session implements Runnable {
                         .filter(s -> s.length() != 0)
                         .collect(Collectors.toList());
                 if(command.size() == 0){
-                    out.println();
+                    this.out.println();
                     continue;
                 }
                 if(command.get(0).equals("quit")) break;
                 String response = runCommand(command);
-                out.println(response);
+                this.out.println(response);
             }
         }catch(IOException e){
             System.out.println("Connection closed by client (User: " + this.user + "): " + e.getMessage());
         }finally{
-            if(out != null){
-                out.close();
+            if(this.out != null){
+                this.out.close();
             }
             try{
                 if(in != null){
@@ -118,7 +119,7 @@ public class Session implements Runnable {
             return "NAME\t\tPRICE\tAMOUNT IN STOCK\n" +
                     this.auctionHouse.listAvailableServers()
                             .stream()
-                            .map(x -> x.getFirst().getName() + "\t" + x.getFirst().getPrice() + "\t" + x.getSecond())
+                            .map(x -> x.getFirst() + "\t" + x.getFirst().getPrice() + "\t" + x.getSecond())
                             .sorted()
                             .reduce("", (x, y) -> x + "\n" + y);
         }
@@ -216,19 +217,19 @@ public class Session implements Runnable {
         return Arrays.stream(ServerType.values()).map(ServerType::getName).collect(Collectors.toList()).toString();
     }
 
-    public void notifyAuctionWon(ServerType serverType, int dropletId) { //TODO
+    public void notifyAuctionWon(ServerType serverType, int dropletId) {
         this.inAuction = false;
-        System.out.println("User: " + this.user + " won " + serverType + " @ " + dropletId);
+        this.out.println("You have won the auction for a " + serverType + " with ID: " + dropletId + ".");
     }
 
-    public void notifyAuctionWonButOutOfStock(ServerType serverType) { //TODO
+    public void notifyAuctionWonButOutOfStock(ServerType serverType) {
         this.inAuction = false;
-        System.out.println("User " + this.user + " won " + serverType + " but it's out of stock");
+        this.out.println("You have won the auction for a " + serverType + " but it's out of stock.");
     }
 
-    public void notifyAuctionLost(ServerType serverType) { //TODO
+    public void notifyAuctionLost(ServerType serverType) {
         this.inAuction = false;
-        System.out.println("User " + this.user + " lost " + serverType);
+        this.out.println("You have lost the auction for a " + serverType + ".");
     }
 }
 
