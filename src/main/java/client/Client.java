@@ -33,8 +33,6 @@ public class Client {
         new Thread(this::inbox).start();
         try {
             for (; ; ) {
-//                out.print("§ ");
-//                out.flush();
                 String message = this.console.nextLine().trim();
                 this.writer.println(message);
                 if (message.equals("quit")) break;
