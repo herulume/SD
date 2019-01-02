@@ -141,12 +141,11 @@ public class AuctionHouse {
             return AuctionKind.QUEUED;
         } else {
             this.auctions.lock();
-            this.stock.get(st).fetchAndApply(x -> x - 1);
-            this.stock.unlock();
             Auction auction = this.auctions.getLocked(st);
             try {
                 if (auction == null) {
                     Auction a = new Auction(st, bid, this::reserveAuctioned);
+                    this.stock.get(st).fetchAndApply(x -> x - 1);
                     Auction shouldBeNull = auctions.putLocked(st, a);
                     assert shouldBeNull == null;
                 } else {
@@ -154,6 +153,7 @@ public class AuctionHouse {
                 }
             } finally {
                 this.auctions.unlock();
+                this.stock.unlock();
                 if (auction != null) auction.unlock();
             }
             return AuctionKind.TIMED;
