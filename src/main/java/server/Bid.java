@@ -1,25 +1,17 @@
 package server;
 
-import server.middleware.Session;
-
 public class Bid implements Comparable<Bid> {
 
-    private final Session session;
     private final float value;
     private final User bidder;
 
-    public Bid(Session session, float value, User bidder) {
-        this.session = session;
+    public Bid(float value, User bidder) {
         this.value = value;
         this.bidder = bidder;
     }
 
     float getValue() {
         return this.value;
-    }
-
-    Session getSession() {
-        return this.session;
     }
 
     User getBidder() {

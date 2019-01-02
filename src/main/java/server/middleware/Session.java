@@ -20,12 +20,10 @@ public class Session implements Runnable {
     private User user;
     private Socket socket;
     private AuctionHouse auctionHouse;
-    private boolean inAuction;
 
     public Session(Socket socket, AuctionHouse auctionHouse){
         this.socket = socket;
         this.auctionHouse = auctionHouse;
-        this.inAuction = false;
         this.user = null;
     }
 
@@ -193,15 +191,16 @@ public class Session implements Runnable {
 
     private String auction(List<String> command){
         if(this.user == null) return Session.LOGIN_REQUIRED;
-        if (this.inAuction) return "Already in an auction";
         if(command.size() < 2) return "Usage: auction <amount> " + serverTypes();
         try{
-            Bid b = new Bid(this, Float.parseFloat(command.get(0)), this.user);
+            Bid b = new Bid(Float.parseFloat(command.get(0)), this.user);
             Optional<ServerType> st = ServerType.fromString(command.get(1));
             if(st.isPresent()){
-                this.auctionHouse.auction(st.get(), b);
-                this.inAuction = true;
-                return "Auction started!";
+                switch (this.auctionHouse.auction(st.get(), b)){
+                    case TIMED: return "Auction started!";
+                    case QUEUED: return "Request queued!";
+                    default: assert false; return "";
+                }
             }else{
                 return "Invalid server type: " + command.get(0) + "\nAvailable server types: " + serverTypes();
             }
@@ -216,19 +215,5 @@ public class Session implements Runnable {
         return Arrays.stream(ServerType.values()).map(ServerType::getName).collect(Collectors.toList()).toString();
     }
 
-    public void notifyAuctionWon(ServerType serverType, int dropletId) { //TODO
-        this.inAuction = false;
-        System.out.println("User: " + this.user + " won " + serverType + " @ " + dropletId);
-    }
-
-    public void notifyAuctionWonButOutOfStock(ServerType serverType) { //TODO
-        this.inAuction = false;
-        System.out.println("User " + this.user + " won " + serverType + " but it's out of stock");
-    }
-
-    public void notifyAuctionLost(ServerType serverType) { //TODO
-        this.inAuction = false;
-        System.out.println("User " + this.user + " lost " + serverType);
-    }
 }
 
