@@ -130,7 +130,7 @@ public class AuctionHouse {
         return auctionsL;
     }
 
-    public enum AuctionKind { TIMED, QUEUED }
+    public enum AuctionKind { TIMED_STARTED, TIMED_REBIDED, QUEUED }
 
     public AuctionKind auction(ServerType st, Bid bid) throws BidTooLowException {
         Objects.requireNonNull(st);
@@ -148,15 +148,16 @@ public class AuctionHouse {
                     this.stock.get(st).fetchAndApply(x -> x - 1);
                     Auction shouldBeNull = auctions.putLocked(st, a);
                     assert shouldBeNull == null;
+                    return AuctionKind.TIMED_STARTED;
                 } else {
                     auction.bid(bid);
+                    return AuctionKind.TIMED_REBIDED;
                 }
             } finally {
                 this.auctions.unlock();
                 this.stock.unlock();
                 if (auction != null) auction.unlock();
             }
-            return AuctionKind.TIMED;
         }
     }
 

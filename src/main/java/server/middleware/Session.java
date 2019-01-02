@@ -197,7 +197,8 @@ public class Session implements Runnable {
             Optional<ServerType> st = ServerType.fromString(command.get(1));
             if(st.isPresent()){
                 switch (this.auctionHouse.auction(st.get(), b)){
-                    case TIMED: return "Auction started!";
+                    case TIMED_STARTED: return "Auction started!";
+                    case TIMED_REBIDED: return "Bid added to auction!";
                     case QUEUED: return "Request queued!";
                     default: assert false; return "";
                 }
