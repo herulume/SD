@@ -4,6 +4,7 @@ import server.exception.*;
 import util.*;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -30,7 +31,7 @@ public class AuctionHouse {
 
         Arrays.stream(ServerType.values()).forEach(st -> {
             this.stock.put(st, new AtomicInt(AuctionHouse.initialStock));
-            this.queues.put(st, new AQueue(st, this::reserveQueued));
+            this.queues.put(st, new AQueue(bid -> this.reserveQueued(st, bid)));
         });
     }
 
@@ -144,7 +145,7 @@ public class AuctionHouse {
             Auction auction = this.auctions.getLocked(st);
             try {
                 if (auction == null) {
-                    Auction a = new Auction(st, bid, this::reserveAuctioned);
+                    Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
                     this.stock.get(st).fetchAndApply(x -> x - 1);
                     Auction shouldBeNull = auctions.putLocked(st, a);
                     assert shouldBeNull == null;

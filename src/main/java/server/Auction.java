@@ -1,12 +1,10 @@
 package server;
 
 import server.exception.BidTooLowException;
-import server.middleware.Session;
 import util.Lockable;
 
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -14,7 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class Auction implements Lockable {
 
@@ -26,7 +24,7 @@ public class Auction implements Lockable {
     private final ReadWriteLock lock;
 
 
-    public Auction(ServerType st, Bid bid, BiFunction<ServerType, Bid, Integer> endCallback) {
+    public Auction(ServerType st, Bid bid, Function<Bid, Integer> endCallback) {
         Objects.requireNonNull(endCallback);
         this.serverType = Objects.requireNonNull(st);
 
@@ -37,7 +35,7 @@ public class Auction implements Lockable {
 
         this.callback = scheduler.schedule(() -> {
             this.lock.writeLock().lock();
-            int id = endCallback.apply(this.serverType, this.highestBid());
+            int id = endCallback.apply(this.highestBid());
             Objects.requireNonNull(this.bids.poll()).getBidder().sendNotification("Won " + this.serverType + " with id: " + id);
             while (!this.bids.isEmpty()) {
                 this.bids.poll().getBidder().sendNotification("Lost auction: " + this.serverType);
