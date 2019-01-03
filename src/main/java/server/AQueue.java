@@ -16,12 +16,12 @@ class AQueue {
     }
 
     // pushing a bid from the same user will replace any previous bids, regardless of value.
-    synchronized void push(Bid bid) {
+    synchronized void enqueue(Bid bid) {
         this.bids.removeIf(x -> x.getBidder().equals(bid.getBidder()));
         this.bids.add(bid);
     }
 
-    synchronized void pop() {
+    synchronized void serve() {
         if (this.bids.size() > 0)
             popCallback.accept(this.bids.poll());
     }

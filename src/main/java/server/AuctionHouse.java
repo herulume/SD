@@ -4,7 +4,6 @@ import server.exception.*;
 import util.*;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -92,7 +91,7 @@ public class AuctionHouse {
             this.stock.unlock();
             this.debtDeadServers.unlock();
             target.unlock();
-            this.queues.get(st).pop();
+            this.queues.get(st).serve();
             return toRemove.getId();
         } else {
             target.unlock();
@@ -138,7 +137,7 @@ public class AuctionHouse {
         Objects.requireNonNull(bid);
         this.stock.lock();
         if (this.stock.get(st).load() == 0) {
-            this.queues.get(st).push(bid);
+            this.queues.get(st).enqueue(bid);
             return AuctionKind.QUEUED;
         } else {
             this.auctions.lock();
@@ -172,15 +171,18 @@ public class AuctionHouse {
 
     private void reserveQueued(ServerType st, Bid bid) {
         this.stock.lock();
-        if (this.stock.get(st).load() > 0) {
-            this.stock.get(st).fetchAndApply(x -> x - 1);
-            Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
-            this.reservedA.put(d.getId(), d);
-            bid.getBidder().sendNotification("Server: " + st + " now in stock! Reserved with id: " + d.getId());
-        } else {
-            this.queues.get(st).push(bid);
+        try{
+            if (this.stock.get(st).load() > 0) {
+                this.stock.get(st).fetchAndApply(x -> x - 1);
+                Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
+                this.reservedA.put(d.getId(), d);
+                bid.getBidder().sendNotification("Server: " + st + " now in stock! Reserved with id: " + d.getId());
+            } else {
+                this.queues.get(st).enqueue(bid);
+            }
+        } finally {
+            this.stock.unlock();
         }
-        this.stock.unlock();
     }
 
     public Pair<Float, Float> getDebt(User user) {
