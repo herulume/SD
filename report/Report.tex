@@ -67,6 +67,8 @@ A lógica do servidor está dividida em 3 \textit{packages}:
 \subsection{server.middleware}
 \subsubsection{\texttt{Session}}
 
+A \texttt{Session} serve de \textit{middleware} entre a ligação TCP e a \texttt{AuctionHouse}. É instanciada uma nova para cada nova ligação. Esta por si recebe os comandos do utilizador, interpreta-os e comunica esta intenção ao \textit{backend}. Inversamente, a \texttt{Session} comunica as respostas do \textit{backend} ao cliente. Para isto é necessário que o cliente permita comunicação assíncrona.
+
 % Notes for this section:
 % Session == Controller if considering MVC
 
@@ -78,7 +80,7 @@ A lógica do servidor está dividida em 3 \textit{packages}:
 \subsection{util}
 \subsubsection{\texttt{AtomicInt}}
 
-Esta classe implementa uma versão \textit{thread safe} de um \texttt{Integer} disponibilizando uma API restrita que apenas permite alterações atómicas do seu valor. Esta é útil para garantir que os IDs auto-incrementados dos \texttt{Droplet}s nunca se repetem, caso dois fossem instanciados em simultâneo.
+Esta classe implementa uma versão \textit{thread safe} e mutável de um \texttt{Integer} disponibilizando uma API restrita que apenas permite alterações atómicas do seu valor. Esta é útil para garantir, por exemplo,  que os IDs auto-incrementados dos \texttt{Droplet}s nunca se repetem  caso dois fossem instanciados em simultâneo.
 
 \subsubsection{\texttt{ThreadSafeMap}}
 
