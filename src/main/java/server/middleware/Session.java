@@ -200,7 +200,7 @@ public class Session implements Runnable {
                     case TIMED_STARTED: return "Auction started!";
                     case TIMED_REBIDED: return "Bid added to auction!";
                     case QUEUED: return "Request queued!";
-                    default: assert false; return "";
+                    default: return "Something went wrong!"; /* Unreachable */
                 }
             }else{
                 return "Invalid server type: " + command.get(0) + "\nAvailable server types: " + serverTypes();
