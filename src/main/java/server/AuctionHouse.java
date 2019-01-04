@@ -12,7 +12,7 @@ public class AuctionHouse {
     private ThreadSafeMap<String, User> users;
     private ThreadSafeMap<String, AtomicFloat> debtDeadServers;
     private ThreadSafeMutMap<ServerType, Auction> auctions;
-    private ThreadSafeMap<ServerType, AQueue> queues;
+    private ThreadSafeMap<ServerType, UniqueBidQueue> queues;
     private ThreadSafeMap<Integer, Droplet> reservedD;
     private ThreadSafeMap<Integer, Droplet> reservedA;
     private ThreadSafeMap<ServerType, AtomicInt> stock;
@@ -30,7 +30,7 @@ public class AuctionHouse {
 
         Arrays.stream(ServerType.values()).forEach(st -> {
             this.stock.put(st, new AtomicInt(AuctionHouse.initialStock));
-            this.queues.put(st, new AQueue(bid -> this.reserveQueued(st, bid)));
+            this.queues.put(st, new UniqueBidQueue(bid -> this.reserveQueued(st, bid)));
         });
     }
 

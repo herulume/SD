@@ -5,12 +5,12 @@ import java.util.PriorityQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-class AQueue {
+class UniqueBidQueue {
 
     private final PriorityQueue<Bid> bids;
     private final Consumer<Bid> popCallback;
 
-    AQueue(Consumer<Bid> popCallback) {
+    UniqueBidQueue(Consumer<Bid> popCallback) {
         this.bids = new PriorityQueue<>(Comparator.reverseOrder());
         this.popCallback = popCallback;
     }
