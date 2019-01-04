@@ -68,6 +68,7 @@ public class AuctionHouse {
     }
 
     public int dropServer(int serverID, User user) throws ServerNotFoundException, ServerPermissionException {
+        Objects.requireNonNull(user);
         this.reservedD.lock();
         this.reservedA.lock();
         final ThreadSafeMap<Integer, Droplet> target;
@@ -84,17 +85,19 @@ public class AuctionHouse {
         }
         final Droplet toRemove = target.get(serverID);
         if (toRemove.getOwner().equals(user)) {
+            ServerType st;
             this.stock.lock();
             this.debtDeadServers.lock();
-            ServerType st = target.remove(serverID).getServerType();
-
-            this.debtDeadServers.get(user.getEmail()).fetchAndApply(x -> x + toRemove.getDebt());
-            this.stock.get(toRemove.getServerType()).fetchAndApply(x -> x + 1);
-
-            this.stock.unlock();
-            this.debtDeadServers.unlock();
-            target.unlock();
-            this.queues.get(st).serve();
+            try {
+                st = target.remove(serverID).getServerType();
+                this.debtDeadServers.get(user.getEmail()).fetchAndApply(x -> x + toRemove.getDebt());
+                this.stock.get(toRemove.getServerType()).fetchAndApply(x -> x + 1);
+                this.queues.get(st).serve();
+            } finally {
+                this.debtDeadServers.unlock();
+                this.stock.unlock();
+                target.unlock();
+            }
             return toRemove.getId();
         } else {
             target.unlock();
