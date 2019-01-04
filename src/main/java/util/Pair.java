@@ -32,7 +32,7 @@ public class Pair<F, S> {
         return of(first, function.apply(second));
     }
 
-    public static  <F, S> Pair<F, S> of(final F first, final S second) {
+    public static <F, S> Pair<F, S> of(final F first, final S second) {
         return new Pair<>(first, second);
     }
 }

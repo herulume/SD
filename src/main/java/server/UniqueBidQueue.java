@@ -2,7 +2,6 @@ package server;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 class UniqueBidQueue {

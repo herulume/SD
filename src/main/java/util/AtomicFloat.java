@@ -14,7 +14,7 @@ public class AtomicFloat {
         return this.value;
     }
 
-    public synchronized void store(float value){
+    public synchronized void store(float value) {
         this.value = value;
     }
 

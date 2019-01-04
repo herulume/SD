@@ -3,7 +3,10 @@ package server;
 import server.exception.*;
 import util.*;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -171,7 +174,7 @@ public class AuctionHouse {
 
     private void reserveQueued(ServerType st, Bid bid) {
         this.stock.lock();
-        try{
+        try {
             if (this.stock.get(st).load() > 0) {
                 this.stock.get(st).fetchAndApply(x -> x - 1);
                 Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
