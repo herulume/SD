@@ -145,21 +145,24 @@ public class AuctionHouse {
                 return AuctionKind.QUEUED;
             } else {
                 this.auctions.lock();
-                Auction auction = this.auctions.getLocked(st);
                 try {
-                    if (auction == null) {
-                        Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
-                        this.stock.get(st).fetchAndApply(x -> x - 1);
-                        Auction shouldBeNull = auctions.putLocked(st, a);
-                        assert shouldBeNull == null;
-                        return AuctionKind.TIMED_STARTED;
-                    } else {
-                        auction.bid(bid);
-                        return AuctionKind.TIMED_REBIDED;
+                    Auction auction = this.auctions.getLocked(st);
+                    try{
+                        if (auction == null) {
+                            Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
+                            this.stock.get(st).fetchAndApply(x -> x - 1);
+                            Auction shouldBeNull = auctions.putLocked(st, a);
+                            assert shouldBeNull == null;
+                            return AuctionKind.TIMED_STARTED;
+                        } else {
+                            auction.bid(bid);
+                            return AuctionKind.TIMED_REBIDED;
+                        }
+                    } finally {
+                        if (auction != null) auction.unlock();
                     }
                 } finally {
                     this.auctions.unlock();
-                    if (auction != null) auction.unlock();
                 }
             }
         } finally {
