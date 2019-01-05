@@ -141,35 +141,34 @@ public class AuctionHouse {
     public AuctionKind auction(ServerType st, Bid bid) throws BidTooLowException {
         Objects.requireNonNull(st);
         Objects.requireNonNull(bid);
-        this.stock.lock();
-        try {
-            if (this.stock.get(st).load() == 0) {
-                this.queues.get(st).enqueue(bid);
-                return AuctionKind.QUEUED;
+        this.auctions.lock();
+        try{
+            if (this.auctions.containsKey(st)) {
+                Auction auction = this.auctions.getLocked(st);
+                try{
+                    auction.bid(bid);
+                    return AuctionKind.TIMED_REBIDED;
+                } finally {
+                    auction.unlock();
+                }
             } else {
-                this.auctions.lock();
+                this.stock.lock();
                 try {
-                    Auction auction = this.auctions.getLocked(st);
-                    try{
-                        if (auction == null) {
-                            Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
-                            this.stock.get(st).apply(x -> x - 1);
-                            Auction shouldBeNull = auctions.putLocked(st, a);
-                            assert shouldBeNull == null;
-                            return AuctionKind.TIMED_STARTED;
-                        } else {
-                            auction.bid(bid);
-                            return AuctionKind.TIMED_REBIDED;
-                        }
-                    } finally {
-                        if (auction != null) auction.unlock();
+                    if (this.stock.get(st).load() == 0) {
+                        this.queues.get(st).enqueue(bid);
+                        return AuctionKind.QUEUED;
+                    } else {
+                        Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
+                        this.stock.get(st).apply(x -> x - 1);
+                        auctions.putLocked(st, a);
+                        return AuctionKind.TIMED_STARTED;
                     }
                 } finally {
-                    this.auctions.unlock();
+                    this.stock.unlock();
                 }
             }
         } finally {
-            this.stock.unlock();
+            this.auctions.unlock();
         }
     }
 
@@ -177,7 +176,6 @@ public class AuctionHouse {
         this.auctions.remove(st);
         Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
         this.reservedA.put(d.getId(), d);
-        bid.getBidder().sendNotification("Server: " + st + " reserved with id: " + d.getId());
         return d.getId();
     }
 
