@@ -19,21 +19,24 @@ public class Session implements Runnable {
 
     private User user;
     private Socket socket;
+    private PrintWriter out;
+    private Thread ctt;
     private AuctionHouse auctionHouse;
 
     public Session(Socket socket, AuctionHouse auctionHouse){
         this.socket = socket;
         this.auctionHouse = auctionHouse;
         this.user = null;
+        this.out = null;
+        this.ctt = null;
     }
 
     @Override
     public void run(){
         BufferedReader in = null;
-        PrintWriter out = null;
         try{
             try{
-                out = new PrintWriter(new OutputStreamWriter(this.socket.getOutputStream()),/*auto flush*/true);
+                this.out = new PrintWriter(new OutputStreamWriter(this.socket.getOutputStream()),/*auto flush*/true);
                 in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             }catch(IOException e){
                 System.out.println("Couldn't set up IO: " + e.getMessage());
@@ -62,6 +65,11 @@ public class Session implements Runnable {
                 if(in != null){
                     in.close();
                 }
+                if(this.out != null) {
+                    this.out.close();
+                }
+                if(this.ctt != null)
+                    this.ctt.interrupt();
                 this.socket.close();
             }catch(IOException ignored){
             }
@@ -104,6 +112,8 @@ public class Session implements Runnable {
         if(command.size() < 2) return "Usage: login <email> <password>";
         try{
             this.user = this.auctionHouse.login(command.get(0), command.get(1));
+            this.ctt = new Thread(new Ctt(this.user, this.out));
+            this.ctt.start();
             return "Logged in";
         }catch(LoginException e){
             return e.getMessage();
