@@ -1,12 +1,10 @@
 package server;
 
 import server.exception.BidTooLowException;
-import server.middleware.Session;
 import util.Lockable;
 
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -14,7 +12,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class Auction implements Lockable {
 
@@ -26,7 +24,7 @@ public class Auction implements Lockable {
     private final ReadWriteLock lock;
 
 
-    public Auction(ServerType st, Bid bid, BiFunction<ServerType,Bid,Optional<Integer>> endCallback) {
+    public Auction(ServerType st, Bid bid, Function<Bid, Integer> endCallback) {
         Objects.requireNonNull(endCallback);
         this.serverType = Objects.requireNonNull(st);
 
@@ -37,13 +35,10 @@ public class Auction implements Lockable {
 
         this.callback = scheduler.schedule(() -> {
             this.lock.writeLock().lock();
-            Optional<Integer> id = endCallback.apply(this.serverType, this.highestBid());
-            if (id.isPresent())
-                Objects.requireNonNull(this.bids.poll()).getSession().notifyAuctionWon(this.serverType, id.get());
-            else
-                Objects.requireNonNull(this.bids.poll()).getSession().notifyAuctionWonButOutOfStock(this.serverType);
+            int id = endCallback.apply(this.highestBid());
+            Objects.requireNonNull(this.bids.poll()).getBidder().sendNotification("Won " + this.serverType + " with id: " + id);
             while (!this.bids.isEmpty()) {
-                this.bids.poll().getSession().notifyAuctionLost(this.serverType);
+                this.bids.poll().getBidder().sendNotification("Lost auction: " + this.serverType);
             }
             this.lock.writeLock().unlock();
         }, 40, TimeUnit.SECONDS);
@@ -55,6 +50,7 @@ public class Auction implements Lockable {
         try {
             if (this.highestBid().getValue() >= bid.getValue())
                 throw new BidTooLowException("Please bid higher then the current highest bid: " + highestBid().getValue());
+            this.bids.removeIf(x -> x.getBidder().equals(bid.getBidder()));
             this.bids.add(bid);
         } finally {
             this.lock.writeLock().unlock();
@@ -64,19 +60,9 @@ public class Auction implements Lockable {
     private Bid highestBid() {
         this.lock.writeLock().lock();
         try {
-            assert this.bids.peek() != null;
-            return this.bids.peek();
+            return Objects.requireNonNull(this.bids.peek());
         } finally {
             this.lock.writeLock().unlock();
-        }
-    }
-
-    boolean hasSession(Session s) {
-        try {
-            this.lock.readLock().lock();
-            return this.bids.stream().anyMatch(b -> b.getSession() == s /*using == on purpose*/);
-        } finally {
-            this.lock.readLock().unlock();
         }
     }
 

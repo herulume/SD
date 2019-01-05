@@ -5,6 +5,7 @@ import util.ThreadSafeInbox;
 import java.util.Objects;
 
 public class User {
+
     private final String name;
     private final String email; // Unique
     private final String password;
@@ -50,7 +51,7 @@ public class User {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "name: " + this.name + '\n' + "email: " + this.email;
     }
 
