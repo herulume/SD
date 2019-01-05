@@ -29,4 +29,8 @@ public class AtomicFloat {
         this.value = op.apply(this.value);
         return old;
     }
+
+    public synchronized void apply(Function<Float, Float> op) {
+        this.value = op.apply(this.value);
+    }
 }

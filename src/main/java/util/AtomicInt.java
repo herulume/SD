@@ -30,4 +30,8 @@ public class AtomicInt {
         return old;
     }
 
+    public synchronized void apply(Function<Integer, Integer> op) {
+        this.value = op.apply(this.value);
+    }
+
 }

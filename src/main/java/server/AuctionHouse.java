@@ -90,8 +90,8 @@ public class AuctionHouse {
             this.debtDeadServers.lock();
             try {
                 st = target.remove(serverID).getServerType();
-                this.debtDeadServers.get(user.getEmail()).fetchAndApply(x -> x + toRemove.getDebt());
-                this.stock.get(toRemove.getServerType()).fetchAndApply(x -> x + 1);
+                this.debtDeadServers.get(user.getEmail()).apply(x -> x + toRemove.getDebt());
+                this.stock.get(toRemove.getServerType()).apply(x -> x + 1);
                 this.queues.get(st).serve();
             } finally {
                 this.debtDeadServers.unlock();
@@ -119,7 +119,7 @@ public class AuctionHouse {
             } else {
                 Droplet d = new Droplet(user, st);
                 this.reservedD.put(d.getId(), d);
-                this.stock.get(st).fetchAndApply(x -> x - 1);
+                this.stock.get(st).apply(x -> x - 1);
                 return d.getId();
             }
         } finally {
@@ -153,7 +153,7 @@ public class AuctionHouse {
                     try{
                         if (auction == null) {
                             Auction a = new Auction(st, bid, b -> reserveAuctioned(st, b));
-                            this.stock.get(st).fetchAndApply(x -> x - 1);
+                            this.stock.get(st).apply(x -> x - 1);
                             Auction shouldBeNull = auctions.putLocked(st, a);
                             assert shouldBeNull == null;
                             return AuctionKind.TIMED_STARTED;
@@ -185,7 +185,7 @@ public class AuctionHouse {
         this.stock.lock();
         try {
             if (this.stock.get(st).load() > 0) {
-                this.stock.get(st).fetchAndApply(x -> x - 1);
+                this.stock.get(st).apply(x -> x - 1);
                 Droplet d = new Droplet(bid.getBidder(), st, bid.getValue());
                 this.reservedA.put(d.getId(), d);
                 bid.getBidder().sendNotification("Server: " + st + " now in stock! Reserved with id: " + d.getId());
