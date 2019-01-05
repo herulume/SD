@@ -61,15 +61,13 @@ public class Session implements Runnable {
             if(out != null){
                 out.close();
             }
+            if(this.ctt != null){
+                this.ctt.interrupt();
+            }
             try{
                 if(in != null){
                     in.close();
                 }
-                if(this.out != null) {
-                    this.out.close();
-                }
-                if(this.ctt != null)
-                    this.ctt.interrupt();
                 this.socket.close();
             }catch(IOException ignored){
             }
