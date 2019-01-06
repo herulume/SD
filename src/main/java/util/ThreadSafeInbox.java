@@ -1,37 +1,25 @@
 package util;
 
-import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 
 public class ThreadSafeInbox {
-    private ArrayList<String> messages;
-    private int index;
+
+    private final Deque<String> messages;
 
     public ThreadSafeInbox() {
-        this.messages = new ArrayList<>();
-        index = 0;
+        this.messages = new LinkedList<>();
     }
 
     synchronized public void write(String message) {
-        this.messages.add(message);
-        notifyAll();
+        this.messages.push(message);
+        this.notifyAll();
     }
 
     synchronized public String read() throws InterruptedException {
-        while (this.isEmpty()) {
-            wait();
+        while (this.messages.isEmpty()) {
+            this.wait();
         }
-
-        String message = messages.get(index);
-        index += 1;
-
-        return message;
-    }
-
-    synchronized public void reset() {
-        this.index = 0;
-    }
-
-    synchronized private boolean isEmpty() {
-        return this.messages.size() == this.index;
+        return messages.poll();
     }
 }

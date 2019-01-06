@@ -14,16 +14,6 @@ public class AtomicInt {
         return this.value;
     }
 
-    public synchronized void store(int value) {
-        this.value = value;
-    }
-
-    public synchronized int swap(int value) {
-        int old = this.value;
-        this.value = value;
-        return old;
-    }
-
     public synchronized int fetchAndApply(Function<Integer, Integer> op) {
         int old = this.value;
         this.value = op.apply(this.value);

@@ -14,8 +14,8 @@ public class Client {
     private PrintWriter writer;
     private Scanner console;
 
-    public static void main(String[] args){
-        try{
+    public static void main(String[] args) {
+        try {
             new Client("localhost", 5000).run();
         } catch (IOException e) {
             err.println(e.getMessage());
