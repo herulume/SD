@@ -83,8 +83,21 @@ public class Session implements Runnable {
             case "profile": return profile();
             case "drop": return dropServer(command.subList(1, command.size()));
             case "auction": return auction(command.subList(1, command.size()));
+            case "help": return help();
             default: return "Command not found: " + command.get(0);
         }
+    }
+
+    private String help() {
+        return "Available commands:\n"
+                + "register      Register a new account\n"
+                + "login         Log in to an existing account\n"
+                + "ls            List Droplet state\n"
+                + "buy           Purchase a droplets\n"
+                + "auction       Auction a droplet\n"
+                + "drop          Drop a droplet\n"
+                + "profile       Consult you debt\n"
+                + "help          Displays this message";
     }
 
     private String register(List<String> command) {
@@ -113,44 +126,67 @@ public class Session implements Runnable {
     private String ls(List<String> command) {
         if (this.user == null) return Session.LOGIN_REQUIRED;
         if (command.size() == 0) {
-            return "NAME\t\tPRICE\tAMOUNT IN STOCK\n" +
+            return "NAME         PRICE  AMOUNT IN STOCK\n" +
                     this.auctionHouse.listAvailableServers()
                             .stream()
-                            .map(x -> x.getFirst().getName() + "\t" + x.getFirst().getPrice() + "\t" + x.getSecond())
+                            .map(x -> String.format("%-10s  %6.2f  %15d", x.getFirst().getName(), x.getFirst().getPrice(), x.getSecond()))
                             .sorted()
                             .reduce("", (x, y) -> x + "\n" + y);
         }
         if (command.get(0).equals("-m")) {
-            final String dropletHeader = "\nID\tNAME\t\tDEBT OWED SO FAR\n==================================\n";
-            Function<List<Droplet>, String> stringify = x -> x.stream().map(Droplet::toString).sorted().collect(Collectors.joining("\n"));
-            Pair<String, String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
-                    .mapFirst(stringify)
-                    .mapSecond(stringify);
-            StringBuilder result = new StringBuilder("DROPLETS:");
-            if (possessions.getFirst().isEmpty()) {
-                result.append(" You have no droplets\n");
-            } else {
-                result.append(dropletHeader).append(possessions.getFirst()).append("\n");
-            }
-            result.append("AUCTIONED DROPLETS:");
-            if (possessions.getSecond().isEmpty()) {
-                result.append(" You have no auctioned droplets\n");
-            } else {
-                result.append(dropletHeader).append(possessions.getSecond()).append("\n");
-            }
-            return result.toString();
+            return ls_m();
         }
         if (command.get(0).equals("-a")) {
-            String auctions = this.auctionHouse.listRunningAuctions()
-                    .stream()
-                    .map(Auction.View::toString)
-                    .reduce("", (x, y) -> x + "\n" + y);
-            if (auctions.isEmpty())
-                return "No auctions running";
-            else
-                return "\nNAME\t\tHIGHEST BID\tTIME LEFT\n=========================================\n" + auctions;
+            return ls_a();
         }
-        return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions";
+        if (command.get(0).equals("-q")) {
+            return ls_q();
+        }
+        return "Usage: ls [OPTION]\n\t-m show my droplets\n\t-a show available auctions\n\t-q show running queues";
+    }
+
+    private String ls_m() {
+        final String dropletHeader = "\nID  NAME       DEBT OWED SO FAR\n";
+        Function<List<Droplet>, String> stringify = x -> x.stream().map(Droplet::toString).sorted().collect(Collectors.joining("\n"));
+        Pair<String, String> possessions = this.auctionHouse.listOwnedServers(this.user.getEmail())
+                .mapFirst(stringify)
+                .mapSecond(stringify);
+        StringBuilder result = new StringBuilder("DROPLETS:");
+        if (possessions.getFirst().isEmpty()) {
+            result.append(" You have no droplets\n");
+        } else {
+            result.append(dropletHeader).append(possessions.getFirst()).append("\n");
+        }
+        result.append("AUCTIONED DROPLETS:");
+        if (possessions.getSecond().isEmpty()) {
+            result.append(" You have no auctioned droplets\n");
+        } else {
+            result.append(dropletHeader).append(possessions.getSecond()).append("\n");
+        }
+        return result.toString();
+    }
+
+    private String ls_a() {
+        String auctions = this.auctionHouse.listRunningAuctions()
+                .stream()
+                .map(Auction.View::toString)
+                .reduce("", (x, y) -> x + "\n" + y);
+        if (auctions.isEmpty())
+            return "No auctions running";
+        else
+            return "\nNAME       HIGHEST BID    TIME LEFT\n" + auctions;
+    }
+
+    private String ls_q() {
+        String queues = this.auctionHouse.listRunningQueues(this.user)
+                .stream()
+                .map(UniqueBidQueue.View::toString)
+                .reduce("", (x, y) -> x + "\n" + y);
+        if (queues.isEmpty())
+            return "No queues running";
+        else
+            return "\nNAME       SIZE   HIGHEST BID   IS YOURS\n" + queues;
+
     }
 
     private String buy(List<String> command) {

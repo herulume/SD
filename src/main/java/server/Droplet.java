@@ -58,7 +58,7 @@ public class Droplet {
 
     @Override
     public String toString() {
-        return this.id + "\t" + this.serverType.getName() + "\t" + String.format("%.2f", this.getDebt());
+        return String.format("%-3d %-10s %16.2f", this.id, this.serverType.getName(), this.getDebt());
     }
 
     @Override
