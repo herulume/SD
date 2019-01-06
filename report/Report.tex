@@ -100,6 +100,9 @@ A lógica do servidor está dividida em 4 \textit{packages}:
     \end{tabular}
 \end{figure}
 
+\subsubsection{Reaproveitamento de Threads}
+De forma a reaproveitar \textit{threads} utilizamos uma \textit{Thread Pool}. Quando uma \textit{thread} deixa de ser necessária, esta fica em estado \textit{idle} para que possa ser reutilizada para a proxima conexão por parte de outro cliente.
+
 \subsubsection{util}
 \paragraph{\texttt{Pair<F,S>}:}
 
