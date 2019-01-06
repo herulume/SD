@@ -104,7 +104,7 @@ public class AuctionHouse {
                 .collect(Collectors.toList());
     }
 
-    public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStock {
+    public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStockException {
         this.stock.lock();
         try {
             if (this.stock.get(st).load() == 0) {
@@ -113,7 +113,7 @@ public class AuctionHouse {
                     Droplet toSteal = this.reservedA.values().stream()
                             .filter(d -> d.getServerType() == st && !d.getOwner().equals(user))
                             .findAny()
-                            .orElseThrow(() -> new DropletOfTypeWithoutStock("No stock for type: " + st.getName()));
+                            .orElseThrow(() -> new DropletOfTypeWithoutStockException("No stock for type: " + st.getName()));
                     this.reservedA.remove(toSteal.getId());
                     this.debtDeadServers.get(toSteal.getOwner().getEmail()).apply(x -> x + toSteal.getDebt());
                     toSteal.getOwner().sendNotification("Your auctioned droplet with id " + toSteal.getId() + " was sold to another user. Get rekt!");

@@ -164,7 +164,7 @@ public class Session implements Runnable {
             } else {
                 return "Invalid server type: " + command.get(0) + "\nAvailable server types: " + serverTypes();
             }
-        } catch (DropletOfTypeWithoutStock e) {
+        } catch (DropletOfTypeWithoutStockException e) {
             return e.getMessage();
         }
     }
