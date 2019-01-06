@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
 
@@ -14,12 +16,13 @@ public class Server {
     public static void main(String[] args) throws IOException {
         ServerSocket server = new ServerSocket(port);
         AuctionHouse auctionHouse = new AuctionHouse();
+        ExecutorService pool = Executors.newCachedThreadPool();
 
         System.out.println("Server started");
         while (true) {
             Socket clientSocket = server.accept();
             System.out.println(LocalDateTime.now() + " : Connection accepted");
-            new Thread(new Session(clientSocket, auctionHouse)).start();
+            pool.submit((new Session(clientSocket, auctionHouse)));
         }
     }
 }
