@@ -1,6 +1,7 @@
 package server;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.function.Consumer;
@@ -12,6 +13,8 @@ public class UniqueBidQueue {
     private ServerType serverType;
 
     UniqueBidQueue(ServerType serverType, Consumer<Bid> popCallback) {
+        Objects.requireNonNull(serverType);
+        Objects.requireNonNull(popCallback);
         this.serverType = serverType;
         this.bids = new PriorityQueue<>(Comparator.reverseOrder());
         this.popCallback = popCallback;
