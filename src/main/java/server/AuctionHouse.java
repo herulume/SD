@@ -3,10 +3,7 @@ package server;
 import server.exception.*;
 import util.*;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -115,7 +112,21 @@ public class AuctionHouse {
         this.stock.lock();
         try {
             if (this.stock.get(st).load() == 0) {
-                throw new DropletOfTypeWithoutStock("No stock for type: " + st.getName());
+                this.reservedA.lock();
+                try {
+                    Droplet toSteal = this.reservedA.values().stream()
+                            .filter(d -> d.getServerType() == st && !d.getOwner().equals(user))
+                            .findAny()
+                            .orElseThrow(() -> new DropletOfTypeWithoutStock("No stock for type: " + st.getName()));
+                    this.reservedA.remove(toSteal.getId());
+                    this.debtDeadServers.get(toSteal.getOwner().getEmail()).apply(x -> x + toSteal.getDebt());
+                    toSteal.getOwner().sendNotification("Your auctioned droplet with id " + toSteal.getId() + " was sold to another user. Get rekt!");
+                } finally {
+                    this.reservedA.unlock();
+                }
+                Droplet stolen = new Droplet(user, st);
+                this.reservedD.put(stolen.getId(), stolen);
+                return stolen.getId();
             } else {
                 Droplet d = new Droplet(user, st);
                 this.reservedD.put(d.getId(), d);
