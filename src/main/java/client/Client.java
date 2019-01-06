@@ -55,8 +55,6 @@ public class Client {
     }
 
     private void gracefulShutdown() {
-        if (this.console != null)
-            console.close();
         if (this.writer != null)
             this.writer.close();
         try {

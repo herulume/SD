@@ -19,8 +19,11 @@ public class Ctt implements Runnable {
 
     public void run() {
         while (true) {
-            String message = user.getEmail();
-            outputInbox.println("[*] New message:\n" + message + "\n");
+            try {
+                String message = user.readNotification();
+                outputInbox.println("[*] New message: " + message + "\n");
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 }
