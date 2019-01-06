@@ -44,7 +44,7 @@
 \pagebreak
 
 \section{Introdução}
-No âmbito da disciplina de Sistemas Distribuídos foi proposto a implementação de uma aplicação para gestão de servidores (requisitar/leiloar) na \textit{cloud}, semelhante às já existentes \textit{Google Cloud} e \textit{Amazon EC2} . Esta aplicação deve suportar registo e autenticação por parte dos utilizadores bem como a compra de servidores, licitar em leilões e criação dos mesmos.
+No âmbito da disciplina de Sistemas Distribuídos foi proposta a implementação de uma aplicação para gestão de servidores (requisitar/leiloar) na \textit{cloud}, semelhante às já existentes \textit{Google Cloud} e \textit{Amazon EC2} . Esta aplicação deve suportar registo e autenticação por parte dos utilizadores bem como a compra de servidores, licitar em leilões e criação dos mesmos.
 
 Esta implementação baseia-se na arquitectura \textit{cliente-servidor}.
 
@@ -57,13 +57,13 @@ O serviço oferecido pela aplicação baseia-se em:
   \item Serviço de leilões.
 \end{itemize}
 
-Um cliente para se registar necessita de fornecer um \texttt{email}, uma \texttt{password} e um \texttt{username}. O \textit{login} utiliza o \texttt{email} como identificador único e permite que o mesmo utilizador esteja autenticado em várias máquinas ao mesmo tempo.
+Um cliente para se registar necessita de fornecer um \texttt{email}, uma \texttt{password} e um \texttt{username}. 
 
-De forma a adquirir uma \textit{droplet}, servidor da lista de catálogo, um utilizador tem duas opções, ou compra a \textit{droplet} ao preço a que esta aparece no catálogo de servidores ou vai a leilão. Um leilão é criado com o valor que o utilizador propor e decorre durante \texttt{40s}. Durante este tempo todos os utilizadores podem licitar de forma a tentarem arrecadar a \textit{droplet}.
+De forma a adquirir uma \textit{droplet}, servidor disponivel no catálogo, um utilizador tem duas opções, ou compra a \textit{droplet} ao preço a que esta aparece no catálogo de servidores ou vai a leilão. Um leilão é criado com o valor que o utilizador propor e decorre durante \texttt{40s}. Durante este tempo todos os utilizadores podem licitar de forma a tentarem arrecadar a \textit{droplet}.
 Quando deixa de haver stock de um tipo de \textit{droplet} e um utilizador tenta adquirir uma \textit{droplet} desse tipo, dependendo do pedido ser uma reserva normal ou um leilão, uma de duas coisas acontece:
+
 $$\textrm{Reservar} \rightarrow \textrm{Tenta roubar}$$
 $$\textrm{Leilão} \rightarrow \textrm{Fila de espera}$$
-
 
 A reserva de um tipo de \textit{droplet} sem stock resulta na tentativa de roubo de uma \textit{droplet} desse tipo que foi adquirida por leilão.
 
@@ -72,7 +72,6 @@ A tentativa de criar um leilão com uma \textit{droplet} cujo tipo se encontra e
 O utilizador tem uma divida associada, resultante do tempo que mantêm as suas \textit{droplets}.
 
 Em qualquer momento o utilizador pode escolher prescindir de uma \textit{droplet} sendo que o \texttt{stock} daquele tipo de servidor é aumentado e a divida proveniente daquela \textit{droplet} é guardada para efeitos económicos e estatísticos.
-
 
 \section{Proposta de Resolução}
 
@@ -104,7 +103,14 @@ A lógica do servidor está dividida em 4 \textit{packages}:
 \subsubsection{util}
 \paragraph{\texttt{Pair<F,S>}:}
 
-Esta classe implementa um par visto que Java não implementa uma classe Pair na sua \textit{standard library}. De notar que esta classe é um \textit{BiFunctor} e oferece métodos com esse poder expressivo. 
+Esta classe implementa um par visto que Java não implementa uma classe Pair na sua \textit{standard library}. De notar que esta classe é um \textit{BiFunctor} e oferece métodos com esse poder expressivo, como por exemplo:
+\begin{figure}[H]
+    \begin{minted}{java}
+public <F2> Pair<F2, S> mapFirst(final Function<? super F, ? extends F2> function) {
+    return of(function.apply(first), second);
+}
+    \end{minted}
+\end{figure}
 
 \paragraph{\texttt{AtomicInt} e \texttt{AtomicFloat}:}
 
@@ -130,7 +136,7 @@ Assim a API desta estrutura de dados disponibiliza os seguintes métodos para qu
 
 \begin{itemize}
     \item \texttt{public V getLocked(K k)}
-    \item \texttt{public Collection<V> getLocked(K k)}
+    \item \texttt{public Collection<V> getLocked(Collection<K> keys)}
     \item \texttt{public V putLocked(K k, V v)}
     \item \texttt{public Collection<V> valuesLocked()}
     \item \texttt{public Set<Entry<K, V>> entrySetLocked()}
@@ -144,8 +150,6 @@ Esta interface obriga as classes implementantes a definir os metodos \texttt{voi
 
 Esta classe actua como um \textit{buffer} de mensagens \textit{thread safe} e serve de \textit{inbox} para cada utilizador. Esta implementação utiliza uma \textit{double endeded queue} e variáveis de condição de forma a garantir a atomicidade das suas operações. 
 
-
-
 \subsubsection{server.middleware}
 \paragraph{\texttt{Session}:}
 
@@ -155,18 +159,23 @@ Esta classe actua como um \textit{buffer} de mensagens \textit{thread safe} e se
 
 Classe responsável por ler as mensagens enviadas para um utilizador. É criado um novo \texttt{Ctt} para cada nova ligação sempre que um utilizador faz \textit{login}. É instanciado utilizando o utilizador da sessão e o \textit{PrintWritter} da mesma. Esta instância corre na sua própria \textit{thread} e limita-se a ler a \texttt{Inbox} do utilizador e mandar o conteúdo para o \textit{buffer}. Desta forma a comunicação por parte do Servidor é assíncrona. 
 
-% Notes for this section:
-% Session == Controller if considering MVC
-
 \subsubsection{server}
 \paragraph{\texttt{AuctionHouse}:}
 
+Esta classe guarda no seu estado interno os utilizadores, a divida destes, os leilões a decorrer, as filas de espera, as \textit{droplets} reservadas separadas pelo método pelo qual foram adquiridas e o stock atual.
+
+Esta classe disponibiliza a principal API da aplicação, registos, \textit{logins}, listagem do catalogo, compra de servidores, etc. Todas as operações de leitura não precisam de controlo de concorrência explicito devido a este ser assegurado pelo \texttt{ThreadSafeMap} e \texttt{ThreadSafeMutMap}. O mesmo se sucede para as operações de escrita que mexem com apenas um \textit{Map}. Por outro lado, as operações de escrita que envolvem mais do que um \texttt{Map} bloqueiam-nos de forma a que a operação seja uma transação. Estes \textit{locks} múltiplos são efetuados sempre pela mesma ordem de prioridade para que não seja criados \textit{deadlocks} causados por dependências circulares.
+\begin{figure}[H]
+    \centering
+    $$\textrm{Leilões} \rightarrow \textrm{Stock} \rightarrow \textrm{Reservas por Leilão} \rightarrow \textrm{Reservas por Compra}$$
+    \caption{Ordem pela qual são adquiridos os locks}
+\end{figure}
 
 \paragraph{\texttt{Auction}:}
-
+Classe que coordena uma leilão. O leilão dura 40 segundos e durante este tempo pode receber novas licitações paralelamente. Quando o tempo termina a \textit{callback} que lhe foi passada no construtor é executada e de seguida notifica todos os utilizadores envolvidos para os informar do seu fim e se ganharam ou perderam a \textit{droplet}.
 
 \paragraph{\texttt{UniqueBidQueue}:}
-Classe que coordena uma fila de espera para quando não há stock suficiente para efetuar um leilão. Esta permite duas operações
+Classe que coordena uma fila de espera para quando não existir stock suficiente para efetuar um leilão. Esta permite duas operações: \textit{enqueue}, que adiciona uma \texttt{Bid} à fila, e \textit{serve} que remove a entrada que possui a maior oferta executando uma \textit{callback} que foi passada no seu construtor. Esta irá alterar o stock e fazer as reservas necessárias.
 
 \paragraph{\texttt{Bid}:}
 Classe que representa uma intenção de licitação. Tem como variáveis de instância o utilizador que a criou e o montante.
@@ -180,27 +189,28 @@ Classe que representa um utilizador da aplicação, guardando o seu email, nome,
 \paragraph{\texttt{ServerType}:}
 Classe que representa os tipos dos servidores. Cada servidor possui um nome e um preço. É um \textit{enum}.
 
-% Notes for this section:
-% server.* == Model if considering MVC
-
 \section{Testes}
 Para assegurar que as funcionalidades críticas do programa funcionam correctamente foi feita uma tentativa de desenvolver alguns testes automáticos sobre o \texttt{AtomicInt}, o \texttt{ThreadSafeMap}, o \texttt{ThreadSafeMutMap} e o Servidor em si. Estes consistem em criar número desmedido de \textit{threads} que realizam imensas operações sobre as classes em questão e verificam se o estado destas se mantém consistente durante o processo. Em anexo seguem alguns exemplos de testes.
 
 Dado que este projecto foi desenvolvido com o auxílio da ferramenta de controlo de versões \textit{GitHub} tentamos também implementar \textit{continuous integration} usando o serviço \textit{Travis}.
 
-\pagebreak
 \section{Trabalho Futuro}
+
+Como complemento do projecto deixamos duas sugestões.
+Em primeiro lugar seria interessante implementar um pseudo-sistema de pagamentos visto que neste momento apenas é acumulada divida.
+Por fim deixamos a nota que alguma verificação formal de certos invariantes seria interessante.
 
 \section{Conclusões}
 Sistemas Distribuídos têm como objectivo melhorar o desempenho de um sistema informático dividindo responsabilidades e repartindo tarefas. É esperado que este processamento em paralelo leve a uma redução do tempo de execução.
-Existem várias formas de implementar paralelismo sendo que a arquitetura usada neste trabalho foi a de \textit{cliente-servidor} tendo por base \textit{threads} da \textit{JVM}. 
+Existem várias formas de implementar paralelismo sendo que a arquitectura usada neste trabalho foi a de \textit{cliente-servidor} tendo por base \textit{threads} da \textit{JVM}. 
 
-É de notar que o paralelismo tem os seus custos podendo não ser de todo proveitoso em programas com uma escala mais reduzida. A introdução de paralelismo costuma ser acompanhada pela introdução de concorrência que por sua vez traz problemas de difícl identificçãoa e reoluoçãom orosa r. 
+É de notar que o paralelismo tem os seus custos podendo não ser de todo proveitoso em programas com uma escala mais reduzida. A introdução de paralelismo costuma ser acompanhada pela introdução de concorrência que por sua vez traz problemas de difícil identificação e resolução. É preciso garantir as propriedades de segurança, isto é nenhum estado indesejado é atingido pelo programa, e as propriedades de \textit{liveness}, propriedades que devem ser verdade durante a execução do programa.
 
 
 \pagebreak
 \section{Anexo}
-\begin{minted}{java}
+\begin{figure}[H]
+    \begin{minted}{java}
 public void apply() throws InterruptedException {
     final AtomicInt aInt = new AtomicInt(0);
     List<Thread> threads = IntStream.range(0, 1000)
@@ -212,5 +222,13 @@ public void apply() throws InterruptedException {
     }
     Assert.assertEquals(aInt.load(), 1000);
 }
-\end{minted}
+    \end{minted}
+    \caption{Teste Unitario do metodos \texttt{AtomicInt::apply}}
+\end{figure}
+\begin{figure}
+    \begin{tabular}{lr}
+    
+    \end{tabular}
+    \caption{Comandos disponibilizados pelo \texttt{Session}}
+\end{figure}
 \end{document}
