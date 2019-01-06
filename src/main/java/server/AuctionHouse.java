@@ -66,39 +66,37 @@ public class AuctionHouse {
 
     public int dropServer(int serverID, User user) throws ServerNotFoundException, ServerPermissionException {
         Objects.requireNonNull(user);
-        this.reservedD.lock();
-        this.reservedA.lock();
-        final ThreadSafeMap<Integer, Droplet> target;
-        if (this.reservedD.containsKey(serverID)) {
-            this.reservedA.unlock();
-            target = this.reservedD;
-        } else if (this.reservedA.containsKey(serverID)) {
-            this.reservedD.unlock();
-            target = this.reservedA;
-        } else {
-            this.reservedD.unlock();
-            this.reservedA.unlock();
-            throw new ServerNotFoundException("No server with that id found");
-        }
-        final Droplet toRemove = target.get(serverID);
-        if (toRemove.getOwner().equals(user)) {
-            ServerType st;
-            this.stock.lock();
-            this.debtDeadServers.lock();
-            try {
-                st = target.remove(serverID).getServerType();
+        this.stock.lock();
+        try {
+            this.reservedA.lock();
+            this.reservedD.lock();
+            final ThreadSafeMap<Integer, Droplet> reservedAD;
+            if (this.reservedD.containsKey(serverID)) {
+                this.reservedA.unlock();
+                reservedAD = this.reservedD;
+            } else if (this.reservedA.containsKey(serverID)) {
+                this.reservedD.unlock();
+                reservedAD = this.reservedA;
+            } else {
+                this.reservedD.unlock();
+                this.reservedA.unlock();
+                throw new ServerNotFoundException("No server with that id found");
+            }
+            final Droplet toRemove = reservedAD.get(serverID);
+            if (toRemove.getOwner().equals(user)) {
+                ServerType st;
+                st = reservedAD.remove(serverID).getServerType();
                 this.debtDeadServers.get(user.getEmail()).apply(x -> x + toRemove.getDebt());
                 this.stock.get(toRemove.getServerType()).apply(x -> x + 1);
                 this.queues.get(st).serve();
-            } finally {
-                this.debtDeadServers.unlock();
-                this.stock.unlock();
-                target.unlock();
+                reservedAD.unlock();
+                return toRemove.getId();
+            } else {
+                reservedAD.unlock();
+                throw new ServerPermissionException("That server doesn't belong to you");
             }
-            return toRemove.getId();
-        } else {
-            target.unlock();
-            throw new ServerPermissionException("That server doesn't belong to you");
+        } finally {
+            this.stock.unlock();
         }
     }
 
@@ -153,10 +151,10 @@ public class AuctionHouse {
         Objects.requireNonNull(st);
         Objects.requireNonNull(bid);
         this.auctions.lock();
-        try{
+        try {
             if (this.auctions.containsKey(st)) {
                 Auction auction = this.auctions.getLocked(st);
-                try{
+                try {
                     auction.bid(bid);
                     return AuctionKind.TIMED_REBIDED;
                 } finally {
