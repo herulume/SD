@@ -66,39 +66,48 @@ public class AuctionHouse {
 
     public int dropServer(int serverID, User user) throws ServerNotFoundException, ServerPermissionException {
         Objects.requireNonNull(user);
-        this.reservedD.lock();
-        this.reservedA.lock();
-        final ThreadSafeMap<Integer, Droplet> target;
-        if (this.reservedD.containsKey(serverID)) {
-            this.reservedA.unlock();
-            target = this.reservedD;
-        } else if (this.reservedA.containsKey(serverID)) {
-            this.reservedD.unlock();
-            target = this.reservedA;
-        } else {
-            this.reservedD.unlock();
-            this.reservedA.unlock();
-            throw new ServerNotFoundException("No server with that id found");
-        }
-        final Droplet toRemove = target.get(serverID);
-        if (toRemove.getOwner().equals(user)) {
-            ServerType st;
-            this.stock.lock();
-            this.debtDeadServers.lock();
-            try {
-                st = target.remove(serverID).getServerType();
-                this.debtDeadServers.get(user.getEmail()).apply(x -> x + toRemove.getDebt());
-                this.stock.get(toRemove.getServerType()).apply(x -> x + 1);
-                this.queues.get(st).serve();
-            } finally {
-                this.debtDeadServers.unlock();
-                this.stock.unlock();
-                target.unlock();
+        this.stock.lock();
+        try {
+            System.out.println(0 + " : " + user.getEmail());
+            this.reservedA.lock();
+            System.out.println(1 + " : " + user.getEmail());
+            this.reservedD.lock();
+            System.out.println(2 + " : " + user.getEmail());
+            final ThreadSafeMap<Integer, Droplet> reservedAD;
+            if (this.reservedD.containsKey(serverID)) {
+                this.reservedA.unlock();
+                reservedAD = this.reservedD;
+            } else if (this.reservedA.containsKey(serverID)) {
+                this.reservedD.unlock();
+                reservedAD = this.reservedA;
+            } else {
+                this.reservedD.unlock();
+                this.reservedA.unlock();
+                throw new ServerNotFoundException("No server with that id found");
             }
-            return toRemove.getId();
-        } else {
-            target.unlock();
-            throw new ServerPermissionException("That server doesn't belong to you");
+            System.out.println(3 + " : " + user.getEmail());
+            final Droplet toRemove = reservedAD.get(serverID);
+            System.out.println(4 + " : " + user.getEmail());
+            if (toRemove.getOwner().equals(user)) {
+                ServerType st;
+                st = reservedAD.remove(serverID).getServerType();
+                System.out.println(8 + " : " + user.getEmail());
+                this.debtDeadServers.get(user.getEmail()).apply(x -> x + toRemove.getDebt());
+                System.out.println(9 + " : " + user.getEmail());
+                this.stock.get(toRemove.getServerType()).apply(x -> x + 1);
+                System.out.println(10 + " : " + user.getEmail());
+                this.queues.get(st).serve();
+                System.out.println(11 + " : " + user.getEmail());
+                reservedAD.unlock();
+                System.out.println(12 + " : " + user.getEmail());
+                return toRemove.getId();
+            } else {
+                System.out.println(13 + " : " + user.getEmail());
+                reservedAD.unlock();
+                throw new ServerPermissionException("That server doesn't belong to you");
+            }
+        } finally {
+            this.stock.unlock();
         }
     }
 
@@ -153,10 +162,10 @@ public class AuctionHouse {
         Objects.requireNonNull(st);
         Objects.requireNonNull(bid);
         this.auctions.lock();
-        try{
+        try {
             if (this.auctions.containsKey(st)) {
                 Auction auction = this.auctions.getLocked(st);
-                try{
+                try {
                     auction.bid(bid);
                     return AuctionKind.TIMED_REBIDED;
                 } finally {
