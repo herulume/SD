@@ -120,7 +120,7 @@ public class AuctionHouse {
                             .orElseThrow(() -> new DropletOfTypeWithoutStock("No stock for type: " + st.getName()));
                     this.reservedA.remove(toSteal.getId());
                     this.debtDeadServers.get(toSteal.getOwner().getEmail()).apply(x -> x + toSteal.getDebt());
-                    toSteal.getOwner().sendNotification("Your auctioned droplet with id " + toSteal.getId() + "was sold to another user!");
+                    toSteal.getOwner().sendNotification("Your auctioned droplet with id " + toSteal.getId() + " was sold to another user. Get rekt!");
                 } finally {
                     this.reservedA.unlock();
                 }
