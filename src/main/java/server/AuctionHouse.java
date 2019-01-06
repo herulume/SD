@@ -68,11 +68,8 @@ public class AuctionHouse {
         Objects.requireNonNull(user);
         this.stock.lock();
         try {
-            System.out.println(0 + " : " + user.getEmail());
             this.reservedA.lock();
-            System.out.println(1 + " : " + user.getEmail());
             this.reservedD.lock();
-            System.out.println(2 + " : " + user.getEmail());
             final ThreadSafeMap<Integer, Droplet> reservedAD;
             if (this.reservedD.containsKey(serverID)) {
                 this.reservedA.unlock();
@@ -85,24 +82,16 @@ public class AuctionHouse {
                 this.reservedA.unlock();
                 throw new ServerNotFoundException("No server with that id found");
             }
-            System.out.println(3 + " : " + user.getEmail());
             final Droplet toRemove = reservedAD.get(serverID);
-            System.out.println(4 + " : " + user.getEmail());
             if (toRemove.getOwner().equals(user)) {
                 ServerType st;
                 st = reservedAD.remove(serverID).getServerType();
-                System.out.println(8 + " : " + user.getEmail());
                 this.debtDeadServers.get(user.getEmail()).apply(x -> x + toRemove.getDebt());
-                System.out.println(9 + " : " + user.getEmail());
                 this.stock.get(toRemove.getServerType()).apply(x -> x + 1);
-                System.out.println(10 + " : " + user.getEmail());
                 this.queues.get(st).serve();
-                System.out.println(11 + " : " + user.getEmail());
                 reservedAD.unlock();
-                System.out.println(12 + " : " + user.getEmail());
                 return toRemove.getId();
             } else {
-                System.out.println(13 + " : " + user.getEmail());
                 reservedAD.unlock();
                 throw new ServerPermissionException("That server doesn't belong to you");
             }
