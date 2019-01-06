@@ -112,14 +112,12 @@ public class ServerTest implements Runnable {
             this.writer.println(message);
             response = this.reader.readLine();
             Assert.assertTrue(response.contains("DROPLETS:"));
-            if(!response.contains("You have no droplets")){
+            if (!response.contains("You have no droplets")) {
                 response = this.reader.readLine();
                 Assert.assertTrue(response, response.contains("ID") && response.contains("NAME"));
                 response = this.reader.readLine();
-                Assert.assertTrue(response, response.contains("====="));
-                response = this.reader.readLine();
                 Assert.assertTrue(response.contains("ts2.high"));
-                List<String> droplet = Arrays.stream(response.split("\t")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+                List<String> droplet = Arrays.stream(response.split(" ")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
                 this.reader.readLine();
                 this.reader.readLine();
                 message = String.format("drop %d", Integer.parseInt(droplet.get(0)));

@@ -14,7 +14,7 @@ public class Droplet {
     private final float cost;
     private final LocalDateTime timestamp;
 
-    private static AtomicInt idN = new AtomicInt(0);
+    private static final AtomicInt idN = new AtomicInt(0);
 
     Droplet(User owner, ServerType serverType) {
         this.id = Droplet.idN.fetchAndApply(x -> x + 1);
@@ -42,10 +42,6 @@ public class Droplet {
 
     ServerType getServerType() {
         return this.serverType;
-    }
-
-    float getCost() {
-        return this.cost;
     }
 
     float getDebt() {

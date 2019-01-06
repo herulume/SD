@@ -10,10 +10,10 @@ import java.util.stream.IntStream;
 public class AtomicIntTest {
 
     @Test
-    public void fetchOp() throws InterruptedException {
+    public void apply() throws InterruptedException {
         final AtomicInt aInt = new AtomicInt(0);
         List<Thread> threads = IntStream.range(0, 1000)
-                .mapToObj(i -> new Thread(() -> aInt.fetchAndApply(x -> x + 1)))
+                .mapToObj(i -> new Thread(() -> aInt.apply(x -> x + 1)))
                 .collect(Collectors.toList());
         threads.forEach(Thread::start);
         for (Thread thread : threads) {

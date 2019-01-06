@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 
 public class AuctionHouse {
 
-    private ThreadSafeMap<String, User> users;
-    private ThreadSafeMap<String, AtomicFloat> debtDeadServers;
-    private ThreadSafeMutMap<ServerType, Auction> auctions;
-    private ThreadSafeMap<ServerType, UniqueBidQueue> queues;
-    private ThreadSafeMap<Integer, Droplet> reservedD;
-    private ThreadSafeMap<Integer, Droplet> reservedA;
-    private ThreadSafeMap<ServerType, AtomicInt> stock;
+    private final ThreadSafeMap<String, User> users;
+    private final ThreadSafeMap<String, AtomicFloat> debtDeadServers;
+    private final ThreadSafeMutMap<ServerType, Auction> auctions;
+    private final ThreadSafeMap<ServerType, UniqueBidQueue> queues;
+    private final ThreadSafeMap<Integer, Droplet> reservedD;
+    private final ThreadSafeMap<Integer, Droplet> reservedA;
+    private final ThreadSafeMap<ServerType, AtomicInt> stock;
 
     private static final int initialStock = 4;
 
@@ -47,8 +47,6 @@ public class AuctionHouse {
         User user = this.users.get(email);
         if (user == null || !user.authenticate(password)) {
             throw new LoginException("Your email or username were incorrect");
-        } else {
-            user.reset();
         }
         return user;
     }
@@ -106,7 +104,7 @@ public class AuctionHouse {
                 .collect(Collectors.toList());
     }
 
-    public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStock {
+    public int requestDroplet(ServerType st, User user) throws DropletOfTypeWithoutStockException {
         this.stock.lock();
         try {
             if (this.stock.get(st).load() == 0) {
@@ -115,7 +113,7 @@ public class AuctionHouse {
                     Droplet toSteal = this.reservedA.values().stream()
                             .filter(d -> d.getServerType() == st && !d.getOwner().equals(user))
                             .findAny()
-                            .orElseThrow(() -> new DropletOfTypeWithoutStock("No stock for type: " + st.getName()));
+                            .orElseThrow(() -> new DropletOfTypeWithoutStockException("No stock for type: " + st.getName()));
                     this.reservedA.remove(toSteal.getId());
                     this.debtDeadServers.get(toSteal.getOwner().getEmail()).apply(x -> x + toSteal.getDebt());
                     toSteal.getOwner().sendNotification("Your auctioned droplet with id " + toSteal.getId() + " was sold to another user. Get rekt!");
@@ -147,9 +145,10 @@ public class AuctionHouse {
 
     public enum AuctionKind { TIMED_STARTED, TIMED_REBIDED, QUEUED }
 
-    public AuctionKind auction(ServerType st, Bid bid) throws BidTooLowException {
+    public AuctionKind auction(ServerType st, Bid bid) throws BidTooLowException, InvalidAmountException {
         Objects.requireNonNull(st);
         Objects.requireNonNull(bid);
+        if (bid.getValue() <= 0) throw new InvalidAmountException("Please bid above 0!");
         this.auctions.lock();
         try {
             if (this.auctions.containsKey(st)) {

@@ -20,10 +20,6 @@ public class Pair<F, S> {
         return second;
     }
 
-    public Pair<S, F> swap() {
-        return of(second, first);
-    }
-
     public <F2> Pair<F2, S> mapFirst(final Function<? super F, ? extends F2> function) {
         return of(function.apply(first), second);
     }

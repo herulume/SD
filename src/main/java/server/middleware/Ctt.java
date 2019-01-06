@@ -5,7 +5,8 @@ import server.User;
 import java.io.PrintWriter;
 import java.util.Objects;
 
-public class Ctt implements Runnable {
+class Ctt implements Runnable {
+
     private final PrintWriter outputInbox;
     private final User user;
 

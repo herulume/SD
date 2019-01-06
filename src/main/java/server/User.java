@@ -9,17 +9,13 @@ public class User {
     private final String name;
     private final String email; // Unique
     private final String password;
-    private ThreadSafeInbox messages;
+    private final ThreadSafeInbox messages;
 
     User(String name, String email, String password) {
         this.name = Objects.requireNonNull(name);
         this.email = Objects.requireNonNull(email);
         this.password = Objects.requireNonNull(password);
         this.messages = new ThreadSafeInbox();
-    }
-
-    String getName() {
-        return this.name;
     }
 
     public String getEmail() {
@@ -36,10 +32,6 @@ public class User {
 
     public String readNotification() throws InterruptedException {
         return this.messages.read();
-    }
-
-    void reset() {
-        this.messages.reset();
     }
 
     @Override

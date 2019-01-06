@@ -6,8 +6,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadSafeMap<K, V> implements Map<K, V>, Lockable {
 
-    protected HashMap<K, V> map;
-    protected ReadWriteLock lock;
+    final HashMap<K, V> map;
+    final ReadWriteLock lock;
 
     public ThreadSafeMap() {
         this.map = new HashMap<>();
