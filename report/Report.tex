@@ -13,7 +13,7 @@
 \begin{document}
 
 
-\title{Sistemas Distribuídos\\ Grupo 16 \\ Alocação de servidores na nuvem}
+\title{Sistemas Distribuídos\\ Grupo 16 \\ Alocação de servidores na cloud}
 \author{Eduardo Barbosa (a83344) \and Bárbara Cardoso (a80453) \and Pedro Mendes (a79003)}
 \date{\today}
 
@@ -44,53 +44,80 @@
 \pagebreak
 
 \section{Introdução}
+No âmbito da disciplina de Sistemas Distribuídos foi proposto a implementação de uma aplicação para gestão de servidores (requisitar/leiloar) na \textit{cloud}, semelhante às já existentes \textit{Google Cloud} e \textit{Amazon EC2} . Esta aplicação deve suportar registo e autenticação por parte dos utilizadores bem como a compra de servidores, licitar em leilões e criação dos mesmos.
 
-\pagebreak
+Esta implementação baseia-se na arquitectura \textit{cliente-servidor}.
+
+
 \section{Descrição do Problema}
+O serviço oferecido pela aplicação baseia-se em:
+\begin{itemize}
+  \item Registo e autenticação de clientes;
+  \item Reserva de servidores;
+  \item Serviço de leilões.
+\end{itemize}
 
-\pagebreak
-\section{Resolução do Problema}
+Um cliente para se registar necessita de fornecer um \texttt{email}, uma \texttt{password} e um \texttt{username}. O \textit{login} utiliza o \texttt{email} como identificador único e permite que o mesmo utilizador esteja autenticado em várias máquinas ao mesmo tempo.
 
-Para a implementação deste sistema foi criada uma classe \texttt{Client}, que funciona de forma muito similar ao comando \texttt{telnet}, para que fosse possível interagir com o servidor.
+De forma a adquirir uma \textit{droplet}, servidor da lista de catálogo, um utilizador tem duas opções, ou compra a \textit{droplet} ao preço a que esta aparece no catálogo de servidores ou vai a leilão. Um leilão é criado com o valor que o utilizador propor e decorre durante \texttt{40s}. Durante este tempo todos os utilizadores podem licitar de forma a tentarem arrecadar a \textit{droplet}.
+Quando deixa de haver stock de um tipo de \textit{droplet} e um utilizador tenta adquirir uma \textit{droplet} desse tipo, dependendo do pedido ser uma reserva normal ou um leilão, uma de duas coisas acontece:
+$$\textrm{Reservar} \rightarrow \textrm{Tenta roubar}$$
+$$\textrm{Leilão} \rightarrow \textrm{Fila de espera}$$
 
-A lógica do servidor está dividida em 3 \textit{packages}:
+
+A reserva de um tipo de \textit{droplet} sem stock resulta na tentativa de roubo de uma \textit{droplet} desse tipo que foi adquirida por leilão.
+
+A tentativa de criar um leilão com uma \textit{droplet} cujo tipo se encontra esgotado resulta em o utilizador ir para uma fila de espera. Quando uma \textit{droplet} desse tipo é libertada o utilizador com a maior oferta nessa fila, ganha o servidor. 
+
+O utilizador tem uma divida associada, resultante do tempo que mantêm as suas \textit{droplets}.
+
+Em qualquer momento o utilizador pode escolher prescindir de uma \textit{droplet} sendo que o \texttt{stock} daquele tipo de servidor é aumentado e a divida proveniente daquela \textit{droplet} é guardada para efeitos económicos e estatísticos.
+
+
+\section{Proposta de Resolução}
+
+O primeiro passo foi identificar as entidades, leia-se classes, envolvidas como \texttt{Bid} que representa uma licitação de um utilizador, \texttt{Auction} que representa um leilão a decorrer e \texttt{User} que representa um utilizador do serviço, entre outras.
+
+Tendo identificado estas entidades identificamos as que têm estado mutável e as que seriam \textit{thread safe} pela sua natureza imutável. Esta separação de classes pelo seu estado, mutável ou imutável, facilita muito o raciocínio e estruturação da arquitectura incluindo a identificação de onde podem surgir problemas relacionados com a componente \textit{multi threaded} do código.
+
+Decidiu-se juntar todos os componentes mutáveis na mesma classe criando assim um único ponto com estado mutável, ou seja, um único ponto de falha. A esta classe foi dada o nome de \texttt{AuctionHouse}. A \texttt{AuctionHouse} tem a responsabilidade de guardar os utilizadores registados e a sua dívida, as \textit{droplets} reservadas, as disponíveis, os leilões a decorrer e as filas de espera. 
+
+Esta aplicação divide-se em 2 componentes principais, o \texttt{Client} que é um programa \textit{a la} \textit{telnet} que é responsável por comunicar com o servidor que, por sua vez, mantêm todo o estado e lógica de negócio (\texttt{AuctionHouse}). Por forma a ter um servidor \textit{multi threaded} recorremos a um \textit{middleware} que faz a integração da \textit{AuctionHouse} com o cliente. Toda a comunicação é feita via \textit{sockets} TCP.
+
+\section{Arquitetura}
+\subsection{Cliente}
+Para a implementação deste sistema foi criada uma classe \texttt{Client}, que permite interagir com o servidor a partir de comandos de texto, usando uma única socket TCP. As leituras e escritas feitas sobre esta socket são por si assíncronas para suportar o serviço de notificações do Servidor.
+
+\subsection{Servidor}
+A lógica do servidor está dividida em 4 \textit{packages}:
 
 \begin{figure}[H]
+\centering
     \begin{tabular}{ll}
-        \texttt{server}            & que contem a lógica de negócio.\\
-        \texttt{server/middleware} & que contem a \texttt{Session}.\\
-        \texttt{server/exceptions} & que contem as \textit{exceptions} lançadas pela lógica de negócio.\\
-        \texttt{util}              & que contem classes utilitárias.
+        \texttt{server}            & Lógica de negócio;\\
+        \texttt{server/middleware} & Classes responsáveis para criar contexto comum;\\
+        \texttt{server/exceptions} & \textit{Exceptions} lançadas pela lógica de negócio;\\
+        \texttt{util}              & Classes utilitárias.
     \end{tabular}
 \end{figure}
 
-\subsection{server.middleware}
-\subsubsection{\texttt{Session}}
+\subsubsection{util}
+\paragraph{\texttt{Pair<F,S>}:}
 
-A \texttt{Session} serve de \textit{middleware} entre a ligação TCP e a \texttt{AuctionHouse}. É instanciada uma nova para cada nova ligação. Esta por si recebe os comandos do utilizador, interpreta-os e comunica esta intenção ao \textit{backend}. Inversamente, a \texttt{Session} comunica as respostas do \textit{backend} ao cliente. Para isto é necessário que o cliente permita comunicação assíncrona.
+Esta classe implementa um par visto que Java não implementa uma classe Pair na sua \textit{standard library}. De notar que esta classe é um \textit{BiFunctor} e oferece métodos com esse poder expressivo. 
 
-% Notes for this section:
-% Session == Controller if considering MVC
+\paragraph{\texttt{AtomicInt} e \texttt{AtomicFloat}:}
 
-\subsection{server}
+Estas classes implementam uma versão \textit{thread safe} e mutável de um \texttt{Integer} ou \texttt{Float} disponibilizando uma API restrita que apenas permite alterações atómicas do seu valor. Esta é útil para garantir, por exemplo,  que os IDs auto-incrementados dos \texttt{Droplet}s nunca se repetem  caso dois fossem instanciados em simultâneo.
 
-% Notes for this section:
-% server.* == Model if considering MVC
+\paragraph{\texttt{ThreadSafeMap}:}
 
-\subsection{util}
-\subsubsection{\texttt{AtomicInt}}
+Esta implementação da interface \texttt{Map<K,V>} garante que todas as operações de escrita feitas sobre ele são atómicas e sequenciais, já as operações de leitura podem ser feitas concorrentemente devido à utilização de um \textit{Read Write Lock}.
 
-Esta classe implementa uma versão \textit{thread safe} e mutável de um \texttt{Integer} disponibilizando uma API restrita que apenas permite alterações atómicas do seu valor. Esta é útil para garantir, por exemplo,  que os IDs auto-incrementados dos \texttt{Droplet}s nunca se repetem  caso dois fossem instanciados em simultâneo.
+\paragraph{\texttt{ThreadSafeMutMap}:}
 
-\subsubsection{\texttt{ThreadSafeMap}}
+Esta extensão do \texttt{ThreadSafeMap} é mais restrita quanto aos objectos que permite guardar, estes tem de implementar a interface \texttt{Lockable} que define objectos com a possibilidade de ser bloqueados por uma \textit{thread}. Esta restrição é necessária para ser possível codificar o seguinte padrão, dentro de cada metodo.
 
-Esta implementação da interface \texttt{Map<K,V>} garante que todas as operações feitas sobre ele são atómicas e sequenciais, utilizando um \textit{Read Write Lock} para que possam haver leituras em simultâneo mas nunca escritas e/ou leituras em simultâneo.
-
-\subsubsection{\texttt{ThreadSafeMutMap}}
-
-Esta extensão do \texttt{ThreadSafeMap} é mais restrita quanto aos objectos que permite guardar, estes tem de implementar a interface \texttt{Lockable} que define objectos com a possibilidade de ser bloqueados por uma \textit{thread}. Esta restrição é necessária para ser possível codificar o seguinte padrão.
-
-\begin{figure}[H]
     \begin{minted}{java}
         this.lock.lock();
         V v = this.map.get(k);
@@ -98,7 +125,6 @@ Esta extensão do \texttt{ThreadSafeMap} é mais restrita quanto aos objectos qu
         this.lock.unlock();
         return v;
     \end{minted}
-\end{figure}
 
 Assim a API desta estrutura de dados disponibiliza os seguintes métodos para que seja explicito que o objecto retornado esta \textit{locked} e terá de ser \textit{unlocked} para que não sejam criadas situações de \textit{deadlock}.
 
@@ -110,9 +136,81 @@ Assim a API desta estrutura de dados disponibiliza os seguintes métodos para qu
     \item \texttt{public Set<Entry<K, V>> entrySetLocked()}
 \end{itemize}
 
+\paragraph{\texttt{Lockable}:}
+
+Esta interface obriga as classes implementantes a definir os metodos \texttt{void lock()} e \texttt{void unlock()} para que possam ser guardadas no \texttt{ThreadSafeMutMap}.
+
+\paragraph{\texttt{ThreadSafeInbox}:}
+
+Esta classe actua como um \textit{buffer} de mensagens \textit{thread safe} e serve de \textit{inbox} para cada utilizador. Esta implementação utiliza uma \textit{double endeded queue} e variáveis de condição de forma a garantir a atomicidade das suas operações. 
+
+
+
+\subsubsection{server.middleware}
+\paragraph{\texttt{Session}:}
+
+\textit{Middleware} entre a ligação TCP e a \texttt{AuctionHouse}. É instanciada uma nova \texttt{Session} para cada nova ligação. Esta recebe a socket da ligação e a \texttt{AuctionHouse}. Com isto, a \texttt{Session} lê os comandos do utilizador, interpreta-os e comunica-os ao \textit{backend}. Inversamente, a \texttt{Session} comunica as respostas do \textit{backend} ao cliente. Para isto é necessário que o cliente permita comunicação assíncrona, pois nem todas as mensagens que o servidor envia são como resposta imediata a um comando.
+
+\paragraph{\texttt{CTT}:}
+
+Classe responsável por ler as mensagens enviadas para um utilizador. É criado um novo \texttt{Ctt} para cada nova ligação sempre que um utilizador faz \textit{login}. É instanciado utilizando o utilizador da sessão e o \textit{PrintWritter} da mesma. Esta instância corre na sua própria \textit{thread} e limita-se a ler a \texttt{Inbox} do utilizador e mandar o conteúdo para o \textit{buffer}. Desta forma a comunicação por parte do Servidor é assíncrona. 
+
+% Notes for this section:
+% Session == Controller if considering MVC
+
+\subsubsection{server}
+\paragraph{\texttt{AuctionHouse}:}
+
+
+\paragraph{\texttt{Auction}:}
+
+
+\paragraph{\texttt{UniqueBidQueue}:}
+Classe que coordena uma fila de espera para quando não há stock suficiente para efetuar um leilão. Esta permite duas operações
+
+\paragraph{\texttt{Bid}:}
+Classe que representa uma intenção de licitação. Tem como variáveis de instância o utilizador que a criou e o montante.
+
+\paragraph{\texttt{Droplet}:}
+Classe que representa um servidor do catálogo. Cada servidor tem como atributos o seu id, dono, tipo do servidor, custo e data de atribuição.
+
+\paragraph{\texttt{User}:}
+Classe que representa um utilizador da aplicação, guardando o seu email, nome, password e a sua \texttt{ThreadSafeInbox}.
+
+\paragraph{\texttt{ServerType}:}
+Classe que representa os tipos dos servidores. Cada servidor possui um nome e um preço. É um \textit{enum}.
+
+% Notes for this section:
+% server.* == Model if considering MVC
+
+\section{Testes}
+Para assegurar que as funcionalidades críticas do programa funcionam correctamente foi feita uma tentativa de desenvolver alguns testes automáticos sobre o \texttt{AtomicInt}, o \texttt{ThreadSafeMap}, o \texttt{ThreadSafeMutMap} e o Servidor em si. Estes consistem em criar número desmedido de \textit{threads} que realizam imensas operações sobre as classes em questão e verificam se o estado destas se mantém consistente durante o processo. Em anexo seguem alguns exemplos de testes.
+
+Dado que este projecto foi desenvolvido com o auxílio da ferramenta de controlo de versões \textit{GitHub} tentamos também implementar \textit{continuous integration} usando o serviço \textit{Travis}.
+
 \pagebreak
-\section{Conclusões e Trabalho Futuro}
+\section{Trabalho Futuro}
+
+\section{Conclusões}
+Sistemas Distribuídos têm como objectivo melhorar o desempenho de um sistema informático dividindo responsabilidades e repartindo tarefas. É esperado que este processamento em paralelo leve a uma redução do tempo de execução.
+Existem várias formas de implementar paralelismo sendo que a arquitetura usada neste trabalho foi a de \textit{cliente-servidor} tendo por base \textit{threads} da \textit{JVM}. 
+
+É de notar que o paralelismo tem os seus custos podendo não ser de todo proveitoso em programas com uma escala mais reduzida. A introdução de paralelismo costuma ser acompanhada pela introdução de concorrência que por sua vez traz problemas de difícl identificçãoa e reoluoçãom orosa r. 
 
 
+\pagebreak
+\section{Anexo}
+\begin{minted}{java}
+public void apply() throws InterruptedException {
+    final AtomicInt aInt = new AtomicInt(0);
+    List<Thread> threads = IntStream.range(0, 1000)
+            .mapToObj(i -> new Thread(() -> aInt.apply(x -> x + 1)))
+            .collect(Collectors.toList());
+    threads.forEach(Thread::start);
+    for (Thread thread : threads) {
+        thread.join();
+    }
+    Assert.assertEquals(aInt.load(), 1000);
+}
+\end{minted}
 \end{document}
-
