@@ -100,7 +100,10 @@ public class Auction implements Lockable {
 
         @Override
         public String toString() {
-            return this.serverType.getName() + "\t" + this.highestBid + "\t\t" + this.timeLeft;
+            return String.format("%-9s %12.2f    %9d",
+                    this.serverType,
+                    this.highestBid,
+                    this.timeLeft);
         }
     }
 }

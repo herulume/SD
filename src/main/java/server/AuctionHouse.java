@@ -30,7 +30,7 @@ public class AuctionHouse {
 
         Arrays.stream(ServerType.values()).forEach(st -> {
             this.stock.put(st, new AtomicInt(AuctionHouse.initialStock));
-            this.queues.put(st, new UniqueBidQueue(bid -> this.reserveQueued(st, bid)));
+            this.queues.put(st, new UniqueBidQueue(st, bid -> this.reserveQueued(st, bid)));
         });
     }
 
@@ -141,6 +141,14 @@ public class AuctionHouse {
             a.unlock();
         }
         return auctionsL;
+    }
+
+    public List<UniqueBidQueue.View> listRunningQueues(User user) {
+        return this.queues.values().stream()
+                .map(q -> q.getView(user))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
 
     public enum AuctionKind { TIMED_STARTED, TIMED_REBIDED, QUEUED }
