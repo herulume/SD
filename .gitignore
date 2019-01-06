@@ -33,3 +33,6 @@ target/
 nbproject/
 build/
 build.xml
+classes/
+src/main/resources/
+src/test/resources/
