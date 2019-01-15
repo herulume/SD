@@ -23,7 +23,8 @@ class Ctt implements Runnable {
             try {
                 String message = user.readNotification();
                 outputInbox.println("[*] New message: " + message + "\n");
-            } catch (InterruptedException ignored) {
+            } catch (InterruptedException e) {
+                return;
             }
         }
     }
